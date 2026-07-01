@@ -1,4 +1,4 @@
-import { LayoutDashboard, type LucideIcon } from "lucide-react";
+import { FileText, LayoutDashboard, type LucideIcon } from "lucide-react";
 
 /**
  * A Tool is a single module surfaced in the navigation.
@@ -29,6 +29,13 @@ export const tools: Tool[] = [
     label: "Accueil",
     icon: LayoutDashboard,
     path: "/",
+    enabled: true,
+  },
+  {
+    id: "cv-builder",
+    label: "Créateur de CV",
+    icon: FileText,
+    path: "/tools/cv-builder",
     enabled: true,
   },
   // Les futurs outils seront ajoutés ici (un objet = un outil).

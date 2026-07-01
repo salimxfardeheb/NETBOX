@@ -1,0 +1,208 @@
+"use client";
+
+/* eslint-disable @next/next/no-img-element */
+import { useRef, type ChangeEvent } from "react";
+import { AlignJustify, AlignLeft, ImagePlus, X } from "lucide-react";
+import { cn } from "@/lib/cn";
+import { Button } from "@/components/ui/Button";
+import { useCVStore } from "../../lib/store";
+import { FormSection } from "./FormSection";
+import { Field, TextArea, TextInput } from "./fields";
+
+export function BasicsSection() {
+  const basics = useCVStore((s) => s.data.basics);
+  const setBasics = useCVStore((s) => s.setBasics);
+  const setPhoto = useCVStore((s) => s.setPhoto);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") setPhoto(reader.result);
+    };
+    reader.readAsDataURL(file);
+    // Permet de re-sélectionner le même fichier après un retrait.
+    event.target.value = "";
+  };
+
+  return (
+    <FormSection title="Informations">
+      {/* Photo */}
+      <div className="flex items-center gap-4">
+        {basics.photo ? (
+          <img
+            src={basics.photo}
+            alt="Aperçu de la photo"
+            className="h-16 w-16 rounded-full border border-glass-border object-cover"
+          />
+        ) : (
+          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-glass-border text-content-secondary">
+            <ImagePlus className="h-5 w-5" />
+          </div>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" onClick={() => fileInputRef.current?.click()}>
+            {basics.photo ? "Changer la photo" : "Ajouter une photo"}
+          </Button>
+          {basics.photo && (
+            <Button variant="ghost" size="sm" onClick={() => setPhoto(null)}>
+              <X className="h-3.5 w-3.5" />
+              Retirer la photo
+            </Button>
+          )}
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handlePhotoChange}
+        />
+      </div>
+
+      {/* Taille de la photo (preview + export Word) */}
+      {basics.photo && (
+        <label className="block space-y-1.5">
+          <span className="text-xs font-medium text-content-secondary">
+            Taille de la photo — {basics.photoSize ?? 100} %
+          </span>
+          <input
+            type="range"
+            min={50}
+            max={150}
+            step={5}
+            value={basics.photoSize ?? 100}
+            onChange={(e) => setBasics({ photoSize: Number(e.target.value) })}
+            className="w-full accent-accent"
+          />
+        </label>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field label="Prénom">
+          <TextInput
+            value={basics.firstName}
+            placeholder="Prénom"
+            onChange={(e) => setBasics({ firstName: e.target.value })}
+          />
+        </Field>
+        <Field label="Nom">
+          <TextInput
+            value={basics.lastName}
+            placeholder="Nom"
+            onChange={(e) => setBasics({ lastName: e.target.value })}
+          />
+        </Field>
+        <Field label="Intitulé du poste" className="sm:col-span-2">
+          <TextInput
+            value={basics.title}
+            placeholder="Ex. Développeur full-stack"
+            onChange={(e) => setBasics({ title: e.target.value })}
+          />
+        </Field>
+        <Field label="Email">
+          <TextInput
+            type="email"
+            value={basics.email ?? ""}
+            placeholder="prenom.nom@mail.com"
+            onChange={(e) => setBasics({ email: e.target.value })}
+          />
+        </Field>
+        <Field label="Téléphone">
+          <TextInput
+            type="tel"
+            value={basics.phone ?? ""}
+            placeholder="06 12 34 56 78"
+            onChange={(e) => setBasics({ phone: e.target.value })}
+          />
+        </Field>
+        <Field label="Adresse" className="sm:col-span-2">
+          <TextInput
+            value={basics.address ?? ""}
+            placeholder="Ville, pays"
+            onChange={(e) => setBasics({ address: e.target.value })}
+          />
+        </Field>
+        <Field label="Date de naissance">
+          <TextInput
+            value={basics.birthDate ?? ""}
+            placeholder="01/01/1990"
+            onChange={(e) => setBasics({ birthDate: e.target.value })}
+          />
+        </Field>
+        <Field label="Permis">
+          <TextInput
+            value={basics.permis ?? ""}
+            placeholder="B"
+            onChange={(e) => setBasics({ permis: e.target.value })}
+          />
+        </Field>
+        <Field label="Nationalité">
+          <TextInput
+            value={basics.nationality ?? ""}
+            placeholder="Algérienne"
+            onChange={(e) => setBasics({ nationality: e.target.value })}
+          />
+        </Field>
+        <Field label="Situation familiale">
+          <TextInput
+            value={basics.maritalStatus ?? ""}
+            placeholder="Célibataire"
+            onChange={(e) => setBasics({ maritalStatus: e.target.value })}
+          />
+        </Field>
+        <Field label="LinkedIn">
+          <TextInput
+            value={basics.linkedin ?? ""}
+            placeholder="linkedin.com/in/prenom-nom"
+            onChange={(e) => setBasics({ linkedin: e.target.value })}
+          />
+        </Field>
+        <Field label="Site web">
+          <TextInput
+            value={basics.website ?? ""}
+            placeholder="monsite.com"
+            onChange={(e) => setBasics({ website: e.target.value })}
+          />
+        </Field>
+        <div className="space-y-1.5 sm:col-span-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-content-secondary">
+              Résumé / profil
+            </span>
+            {/* Alignement du résumé (preview + export Word). */}
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn("h-7 w-7 p-0", !basics.summaryJustify && "glass-active")}
+                aria-label="Aligner à gauche"
+                title="Aligné à gauche"
+                onClick={() => setBasics({ summaryJustify: false })}
+              >
+                <AlignLeft className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn("h-7 w-7 p-0", basics.summaryJustify && "glass-active")}
+                aria-label="Justifier"
+                title="Justifié"
+                onClick={() => setBasics({ summaryJustify: true })}
+              >
+                <AlignJustify className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+          <TextArea
+            value={basics.summary ?? ""}
+            placeholder="Quelques lignes qui résument votre parcours…"
+            onChange={(e) => setBasics({ summary: e.target.value })}
+          />
+        </div>
+      </div>
+    </FormSection>
+  );
+}
