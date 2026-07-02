@@ -10,7 +10,7 @@ export async function exportToWord(
   data: CVData,
   templateKey: TemplateKey
 ): Promise<void> {
-  const doc = templates[templateKey].build(data);
+  const doc = await templates[templateKey].build(data);
   const blob = await Packer.toBlob(doc);
 
   const name =

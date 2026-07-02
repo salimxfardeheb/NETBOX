@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { FaPlus } from "react-icons/fa";
 import { Button } from "@/components/ui/Button";
 import { useCVStore, type StringSection } from "../../lib/store";
 import { FormSection } from "./FormSection";
@@ -27,7 +27,6 @@ export function StringListSection({
   const addString = useCVStore((s) => s.addString);
   const updateString = useCVStore((s) => s.updateString);
   const removeString = useCVStore((s) => s.removeString);
-  const moveString = useCVStore((s) => s.moveString);
   const reorderString = useCVStore((s) => s.reorderString);
 
   const ids = values.map((_, i) => `${section}-${i}`);
@@ -44,20 +43,20 @@ export function StringListSection({
                   placeholder={placeholder}
                   onChange={(e) => updateString(section, index, e.target.value)}
                 />
-                <ItemControls
-                  index={index}
-                  count={values.length}
-                  onMove={(dir) => moveString(section, index, dir)}
-                  onRemove={() => removeString(section, index)}
-                />
+                <ItemControls onRemove={() => removeString(section, index)} />
               </div>
             </SortableRow>
           ))}
         </div>
       </SortableList>
 
-      <Button size="sm" onClick={() => addString(section)}>
-        <Plus className="h-4 w-4" />
+      <Button
+        variant="add"
+        size="sm"
+        className="w-full"
+        onClick={() => addString(section)}
+      >
+        <FaPlus className="h-4 w-4" />
         {addLabel}
       </Button>
     </FormSection>

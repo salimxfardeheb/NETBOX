@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
+import { FaPlus, FaTimes } from "react-icons/fa";
 import { Button } from "@/components/ui/Button";
 import { useCVStore } from "../../lib/store";
 import { FormSection } from "./FormSection";
@@ -30,7 +30,6 @@ export function ExperienceSection({
   const addItem = useCVStore((s) => s.addItem);
   const updateItem = useCVStore((s) => s.updateItem);
   const removeItem = useCVStore((s) => s.removeItem);
-  const moveItem = useCVStore((s) => s.moveItem);
   const reorderItem = useCVStore((s) => s.reorderItem);
 
   const ids = entries.map((_, i) => `${section}-${i}`);
@@ -46,17 +45,12 @@ export function ExperienceSection({
 
             return (
               <SortableRow key={ids[index]} id={ids[index]}>
-                <div className="space-y-3 rounded-xl border border-glass-border bg-white/[0.03] p-4">
+                <div className="space-y-3 rounded-xl border border-glass-border bg-surface p-4">
                   <div className="flex items-start justify-between gap-2">
                     <span className="text-xs font-medium uppercase tracking-wide text-content-secondary">
                       #{index + 1}
                     </span>
-                    <ItemControls
-                      index={index}
-                      count={entries.length}
-                      onMove={(dir) => moveItem(section, index, dir)}
-                      onRemove={() => removeItem(section, index)}
-                    />
+                    <ItemControls onRemove={() => removeItem(section, index)} />
                   </div>
 
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -115,23 +109,23 @@ export function ExperienceSection({
                         />
                         <Button
                           variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 shrink-0 p-0 hover:text-red-400"
+                          size="icon"
+                          className="shrink-0 hover:text-red-400"
                           aria-label="Supprimer la puce"
                           onClick={() =>
                             setBullets(bullets.filter((_, i) => i !== bulletIndex))
                           }
                         >
-                          <X className="h-4 w-4" />
+                          <FaTimes className="h-4 w-4" />
                         </Button>
                       </div>
                     ))}
                     <Button
-                      variant="ghost"
+                      variant="add"
                       size="sm"
                       onClick={() => setBullets([...bullets, ""])}
                     >
-                      <Plus className="h-3.5 w-3.5" />
+                      <FaPlus className="h-3.5 w-3.5" />
                       Ajouter une puce
                     </Button>
                   </div>
@@ -142,8 +136,13 @@ export function ExperienceSection({
         </div>
       </SortableList>
 
-      <Button size="sm" onClick={() => addItem(section)}>
-        <Plus className="h-4 w-4" />
+      <Button
+        variant="add"
+        size="sm"
+        className="w-full"
+        onClick={() => addItem(section)}
+      >
+        <FaPlus className="h-4 w-4" />
         {addLabel}
       </Button>
     </FormSection>

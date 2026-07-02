@@ -7,20 +7,29 @@
    Mirrored into Tailwind via tailwind.config.ts.
    ============================================================ */
 :root {
-  --bg-base: #0a0e1a;
+  /* Light theme — soft blue-grey base with frosted white surfaces. */
+  --bg-base: #e8edf5;
 
-  --glass-bg: rgba(255, 255, 255, 0.06);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-hover: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(15, 23, 42, 0.12);
+  --glass-hover: rgba(15, 23, 42, 0.05);
 
-  --accent: #3b82f6;
-  --accent-glow: rgba(59, 130, 246, 0.5);
+  --accent: #2563eb;
+  --accent-glow: rgba(37, 99, 235, 0.35);
 
-  --text-primary: rgba(255, 255, 255, 0.95);
-  --text-secondary: rgba(255, 255, 255, 0.55);
+  --text-primary: rgba(15, 23, 42, 0.92);
+  --text-secondary: rgba(15, 23, 42, 0.55);
 
   /* Soft, diffuse shadow shared by every glass surface. */
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+  --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.1);
+
+  /* Theme-aware surfaces — raised areas, secondary buttons, form fields.
+     Kept as dark overlays so they read correctly on the light base. */
+  --surface: rgba(15, 23, 42, 0.04);
+  --surface-hover: rgba(15, 23, 42, 0.08);
+  --btn-bg: rgba(15, 23, 42, 0.06);
+  --btn-bg-hover: rgba(15, 23, 42, 0.12);
+  --field-bg: rgba(15, 23, 42, 0.035);
 }
 
 /* ============================================================
@@ -67,7 +76,7 @@ body {
 
   .glass-interactive:hover {
     background: var(--glass-hover);
-    border-color: rgba(255, 255, 255, 0.18);
+    border-color: var(--glass-border);
   }
 
   /* Active / selected state — translucent blue fill with accent glow. */
@@ -94,10 +103,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.2);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(15, 23, 42, 0.32);
 }

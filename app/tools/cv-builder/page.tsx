@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Download, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useTopbarSlot } from "@/lib/topbar-slot";
 import { CVPreview } from "./components/CVPreview";
 import { CVForm } from "./components/form/CVForm";
 import { Select } from "./components/form/fields";
@@ -18,6 +20,7 @@ export default function CVBuilderPage() {
   const setFontScale = useCVStore((s) => s.setFontScale);
   const reset = useCVStore((s) => s.reset);
   const fontScale = data.fontScale ?? 100;
+  const topbarSlot = useTopbarSlot((s) => s.el);
 
   const [exporting, setExporting] = useState(false);
   const previewWrapRef = useRef<HTMLDivElement>(null);
@@ -72,75 +75,75 @@ export default function CVBuilderPage() {
     );
   }
 
-  return (
-    <div className="space-y-4">
-      {/* Barre d'actions */}
-      <div className="glass flex flex-wrap items-center gap-3 rounded-glass px-5 py-4">
-        <h1 className="mr-auto text-lg font-semibold text-content-primary">
-          Créateur de CV
-        </h1>
+  // Contrôles fusionnés dans la barre du haut (Topbar) via un portail.
+  const actions = (
+    <>
+      <label className="flex items-center gap-2 text-sm text-content-secondary">
+        <span className="hidden sm:inline">Template</span>
+        <Select
+          value={templateKey}
+          onChange={(e) => setTemplate(e.target.value as TemplateKey)}
+          className="h-9 w-44 rounded-lg lg:w-56"
+        >
+          {Object.entries(templates).map(([key, template]) => (
+            <option key={key} value={key}>
+              {template.label}
+            </option>
+          ))}
+        </Select>
+      </label>
 
-        <label className="flex items-center gap-2 text-sm text-content-secondary">
-          Template
-          <Select
-            value={templateKey}
-            onChange={(e) => setTemplate(e.target.value as TemplateKey)}
-            className="h-10 w-56 rounded-xl"
-          >
-            {Object.entries(templates).map(([key, template]) => (
-              <option key={key} value={key}>
-                {template.label}
-              </option>
-            ))}
-          </Select>
-        </label>
-
-        {/* Taille de l'écriture (preview + export Word) */}
-        <div className="flex items-center gap-1" title="Taille de l'écriture">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 text-xs"
-            aria-label="Réduire l'écriture"
-            disabled={fontScale <= 70}
-            onClick={() => setFontScale(fontScale - 10)}
-          >
-            A−
-          </Button>
-          <span className="w-12 text-center text-xs tabular-nums text-content-secondary">
-            {fontScale} %
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 text-xs"
-            aria-label="Agrandir l'écriture"
-            disabled={fontScale >= 150}
-            onClick={() => setFontScale(fontScale + 10)}
-          >
-            A+
-          </Button>
-        </div>
-
-        <Button variant="ghost" onClick={handleReset}>
-          <RotateCcw className="h-4 w-4" />
-          Réinitialiser
+      {/* Taille de l'écriture (preview + export Word) */}
+      <div className="flex items-center gap-1" title="Taille de l'écriture">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-xs"
+          aria-label="Réduire l'écriture"
+          disabled={fontScale <= 70}
+          onClick={() => setFontScale(fontScale - 10)}
+        >
+          A−
         </Button>
-
-        <Button variant="accent" onClick={handleExport} disabled={exporting}>
-          {exporting ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Génération…
-            </>
-          ) : (
-            <>
-              <Download className="h-4 w-4" />
-              Télécharger .docx
-            </>
-          )}
+        <span className="w-12 text-center text-xs tabular-nums text-content-secondary">
+          {fontScale} %
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-xs"
+          aria-label="Agrandir l'écriture"
+          disabled={fontScale >= 150}
+          onClick={() => setFontScale(fontScale + 10)}
+        >
+          A+
         </Button>
       </div>
+
+      <Button variant="ghost" onClick={handleReset}>
+        <RotateCcw className="h-4 w-4" />
+        <span className="hidden md:inline">Réinitialiser</span>
+      </Button>
+
+      <Button variant="accent" onClick={handleExport} disabled={exporting}>
+        {exporting ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="hidden sm:inline">Génération…</span>
+          </>
+        ) : (
+          <>
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Télécharger .docx</span>
+          </>
+        )}
+      </Button>
+    </>
+  );
+
+  return (
+    <>
+      {topbarSlot && createPortal(actions, topbarSlot)}
 
       {/* Split-screen : formulaire | preview */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
@@ -154,6 +157,6 @@ export default function CVBuilderPage() {
           <CVPreview data={data} onLayoutChange={setLayout} />
         </div>
       </div>
-    </div>
+    </>
   );
 }

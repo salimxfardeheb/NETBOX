@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { FaPlus } from "react-icons/fa";
 import { Button } from "@/components/ui/Button";
 import { LEVEL_OPTIONS } from "../../lib/levels";
 import { useCVStore } from "../../lib/store";
@@ -14,7 +14,6 @@ export function LanguagesSection() {
   const addItem = useCVStore((s) => s.addItem);
   const updateItem = useCVStore((s) => s.updateItem);
   const removeItem = useCVStore((s) => s.removeItem);
-  const moveItem = useCVStore((s) => s.moveItem);
   const reorderItem = useCVStore((s) => s.reorderItem);
 
   const ids = languages.map((_, i) => `lang-${i}`);
@@ -25,7 +24,7 @@ export function LanguagesSection() {
         <div className="space-y-3">
           {languages.map((language, index) => (
             <SortableRow key={ids[index]} id={ids[index]}>
-              <div className="flex items-end gap-2 rounded-xl border border-glass-border bg-white/[0.03] p-3">
+              <div className="flex items-end gap-2 rounded-xl border border-glass-border bg-surface p-3">
                 <Field label="Langue" className="flex-1">
                   <TextInput
                     value={language.name}
@@ -50,12 +49,7 @@ export function LanguagesSection() {
                   </Select>
                 </Field>
                 <div className="pb-1">
-                  <ItemControls
-                    index={index}
-                    count={languages.length}
-                    onMove={(dir) => moveItem("languages", index, dir)}
-                    onRemove={() => removeItem("languages", index)}
-                  />
+                  <ItemControls onRemove={() => removeItem("languages", index)} />
                 </div>
               </div>
             </SortableRow>
@@ -63,8 +57,13 @@ export function LanguagesSection() {
         </div>
       </SortableList>
 
-      <Button size="sm" onClick={() => addItem("languages")}>
-        <Plus className="h-4 w-4" />
+      <Button
+        variant="add"
+        size="sm"
+        className="w-full"
+        onClick={() => addItem("languages")}
+      >
+        <FaPlus className="h-4 w-4" />
         Ajouter une langue
       </Button>
     </FormSection>

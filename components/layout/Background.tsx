@@ -23,7 +23,7 @@ export function Background() {
           background:
             "radial-gradient(circle at center, #3b82f6 0%, transparent 70%)",
           filter: "blur(120px)",
-          opacity: 0.4,
+          opacity: 0.18,
         }}
       />
 
@@ -36,9 +36,9 @@ export function Background() {
           width: "50vw",
           height: "50vw",
           background:
-            "radial-gradient(circle at center, #1e40af 0%, transparent 70%)",
+            "radial-gradient(circle at center, #60a5fa 0%, transparent 70%)",
           filter: "blur(120px)",
-          opacity: 0.4,
+          opacity: 0.16,
         }}
       />
 
@@ -51,9 +51,9 @@ export function Background() {
           width: "30vw",
           height: "30vw",
           background:
-            "radial-gradient(circle at center, #3b82f6 0%, transparent 70%)",
+            "radial-gradient(circle at center, #a5b4fc 0%, transparent 70%)",
           filter: "blur(120px)",
-          opacity: 0.25,
+          opacity: 0.14,
         }}
       />
     </div>

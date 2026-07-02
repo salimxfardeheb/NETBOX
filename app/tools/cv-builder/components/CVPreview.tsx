@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -24,10 +24,11 @@ import { cn } from "@/lib/cn";
 import type { CVColumn, CVData, CVEntry, CVLayout, CVSectionId } from "../lib/types";
 import { levelToPercent } from "../lib/levels";
 import {
+  CV_ICONS,
   MODELE4_COLORS,
   MODELE4_SECTION_TITLES,
-  headerContactLines,
-  personalLines,
+  headerContactItems,
+  personalItems,
 } from "../templates/modele4";
 
 /* Couleurs du modèle (mêmes valeurs que l'export .docx). */
@@ -38,6 +39,15 @@ const HEADING_BORDER = `#${MODELE4_COLORS.headingBorder}`;
 const BAR_TRACK = `#${MODELE4_COLORS.barTrack}`;
 const HEADER_TITLE = `#${MODELE4_COLORS.headerTitle}`;
 const HEADER_CONTACT = `#${MODELE4_COLORS.headerContact}`;
+
+/*
+ * Feuille A4 exprimée en points (1 px = 1 pt) — même base que l'export
+ * .docx. Rendre l'aperçu à cette taille fixe (puis le mettre à l'échelle
+ * pour la colonne) garantit que la taille du texte à l'écran correspond
+ * exactement au document Word, quelle que soit la largeur de l'écran.
+ */
+const A4_W = 595; // 210 mm
+const A4_H = 842; // 297 mm
 
 /*
  * Tailles de texte en `em` : la base (1em) est fixée sur la feuille
@@ -93,7 +103,7 @@ function hasEntries(entries: CVEntry[]): boolean {
 function isSectionVisible(id: CVSectionId, data: CVData): boolean {
   switch (id) {
     case "contact":
-      return personalLines(data).length > 0;
+      return personalItems(data).length > 0;
     case "summary":
       return Boolean(data.basics.summary?.trim());
     case "education":
@@ -130,10 +140,19 @@ function SectionContent({ id, data }: { id: CVSectionId; data: CVData }) {
       return (
         <section className="mb-3">
           <Heading>{MODELE4_SECTION_TITLES.contact}</Heading>
-          <ul className="space-y-0.5 text-[1.05em] text-[#333333]">
-            {personalLines(data).map((line, i) => (
-              <li key={i}>{line}</li>
-            ))}
+          <ul className="space-y-1 text-[1.05em] text-[#333333]">
+            {personalItems(data).map((item, i) => {
+              const Icon = CV_ICONS[item.type];
+              return (
+                <li key={i} className="flex items-start gap-1.5">
+                  <Icon
+                    className="mt-[0.15em] h-[0.95em] w-[0.95em] shrink-0"
+                    style={{ color: ACCENT }}
+                  />
+                  <span className="min-w-0 break-words">{item.value}</span>
+                </li>
+              );
+            })}
           </ul>
         </section>
       );
@@ -350,7 +369,7 @@ export function CVPreview({
   const lastName = basics.lastName.trim() || "NOM";
   const title = basics.title.trim() || "Intitulé du poste";
 
-  const contactLines = headerContactLines(data);
+  const contactItems = headerContactItems(data);
   const photoPx = Math.round(105 * ((basics.photoSize ?? 100) / 100));
   const baseFontPx = ((data.fontScale ?? 100) / 100) * 10;
 
@@ -452,12 +471,17 @@ export function CVPreview({
           className="flex w-[32%] flex-col justify-center px-4 py-3"
           style={{ backgroundColor: HEADER_BG }}
         >
-          <ul className="space-y-1 text-[0.95em]" style={{ color: HEADER_CONTACT }}>
-            {contactLines.map((line, i) => (
-              <li key={i} className="break-words">
-                {line}
-              </li>
-            ))}
+          {/* En-tête : uniquement email + téléphone, agrandis et avec icône. */}
+          <ul className="space-y-2 text-[1.1em]" style={{ color: HEADER_CONTACT }}>
+            {contactItems.map((item, i) => {
+              const Icon = CV_ICONS[item.type];
+              return (
+                <li key={i} className="flex items-start gap-1.5 break-words">
+                  <Icon className="mt-[0.15em] h-[1.05em] w-[1.05em] shrink-0" />
+                  <span className="min-w-0 break-words">{item.value}</span>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>

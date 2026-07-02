@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -8,6 +8,8 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DraggableAttributes,
+  type DraggableSyntheticListeners,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -15,8 +17,25 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
 import { cn } from "@/lib/cn";
+
+/**
+ * Props de la poignée de glisser-déposer, exposées par `SortableRow`
+ * à ses descendants (typiquement le bouton grip d'`ItemControls`) —
+ * ainsi la poignée vit dans le cluster de contrôles, à droite.
+ */
+type DragHandle = {
+  setActivatorNodeRef: (el: HTMLElement | null) => void;
+  attributes: DraggableAttributes;
+  listeners: DraggableSyntheticListeners;
+};
+
+const DragHandleContext = createContext<DragHandle | null>(null);
+
+/** Poignée de drag de la rangée courante, ou null hors d'une SortableRow. */
+export function useDragHandle(): DragHandle | null {
+  return useContext(DragHandleContext);
+}
 
 /**
  * Liste triable par glisser-déposer. Les ids sont dérivés des index
@@ -56,7 +75,11 @@ export function SortableList({
   );
 }
 
-/** Rangée triable : poignée de drag à gauche, contenu à droite. */
+/**
+ * Rangée triable. La poignée de drag n'est plus rendue ici : elle est
+ * fournie via le contexte à un descendant (le grip d'`ItemControls`),
+ * pour regrouper « déplacer » et « supprimer » dans un même cluster.
+ */
 export function SortableRow({
   id,
   children,
@@ -66,25 +89,25 @@ export function SortableRow({
   children: ReactNode;
   className?: string;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
 
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn("flex items-start gap-1.5", isDragging && "z-10 opacity-60", className)}
+      className={cn("min-w-0", isDragging && "z-10 opacity-60", className)}
     >
-      <button
-        type="button"
-        {...attributes}
-        {...listeners}
-        aria-label="Réordonner"
-        className="mt-2.5 shrink-0 cursor-grab rounded p-0.5 text-content-secondary/60 transition-colors hover:text-content-primary active:cursor-grabbing"
-      >
-        <GripVertical className="h-4 w-4" />
-      </button>
-      <div className="min-w-0 flex-1">{children}</div>
+      <DragHandleContext.Provider value={{ setActivatorNodeRef, attributes, listeners }}>
+        {children}
+      </DragHandleContext.Provider>
     </div>
   );
 }

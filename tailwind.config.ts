@@ -28,6 +28,16 @@ const config: Config = {
           primary: "var(--text-primary)",
           secondary: "var(--text-secondary)",
         },
+        // Theme-aware surfaces (raised areas, secondary buttons, fields).
+        surface: {
+          DEFAULT: "var(--surface)",
+          hover: "var(--surface-hover)",
+        },
+        btn: {
+          DEFAULT: "var(--btn-bg)",
+          hover: "var(--btn-bg-hover)",
+        },
+        field: "var(--field-bg)",
       },
       fontFamily: {
         sans: [

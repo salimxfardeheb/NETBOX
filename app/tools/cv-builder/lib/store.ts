@@ -58,6 +58,8 @@ export function createEmptyCV(): CVData {
       maritalStatus: "",
       linkedin: "",
       website: "",
+      github: "",
+      personalCustom: [],
     },
     languages: [],
     atouts: [],
@@ -100,6 +102,12 @@ interface CVStore {
   setBasics: (patch: Partial<CVBasics>) => void;
   setPhoto: (dataUrl: string | null) => void;
   setTemplate: (key: TemplateKey) => void;
+
+  /** Lignes d'infos personnelles libres (basics.personalCustom). */
+  addPersonalCustom: () => void;
+  updatePersonalCustom: (index: number, value: string) => void;
+  removePersonalCustom: (index: number) => void;
+  reorderPersonalCustom: (from: number, to: number) => void;
 
   addItem: (section: ItemSection) => void;
   updateItem: <S extends ItemSection>(
@@ -144,6 +152,29 @@ export const useCVStore = create<CVStore>()(
       setPhoto: (dataUrl) =>
         set((state) => {
           state.data.basics.photo = dataUrl ?? undefined;
+        }),
+
+      addPersonalCustom: () =>
+        set((state) => {
+          (state.data.basics.personalCustom ??= []).push("");
+        }),
+
+      updatePersonalCustom: (index, value) =>
+        set((state) => {
+          const list = state.data.basics.personalCustom;
+          if (list && index >= 0 && index < list.length) list[index] = value;
+        }),
+
+      removePersonalCustom: (index) =>
+        set((state) => {
+          state.data.basics.personalCustom?.splice(index, 1);
+        }),
+
+      reorderPersonalCustom: (from, to) =>
+        set((state) => {
+          if (state.data.basics.personalCustom) {
+            reorder(state.data.basics.personalCustom, from, to);
+          }
         }),
 
       setTemplate: (key) =>
@@ -249,13 +280,14 @@ export const useCVStore = create<CVStore>()(
     })),
     {
       name: "cv-builder-state",
-      version: 3,
+      version: 4,
       partialize: (state) => ({
         data: state.data,
         templateKey: state.templateKey,
       }),
       // v1 n'avait ni custom, ni layout, ni summaryJustify.
       // v2 n'avait ni kind sur les blocs custom, ni fontScale/photoSize.
+      // v3 n'avait ni github, ni infos personnelles libres (personalCustom).
       migrate: (persisted) => {
         const state = persisted as { data: CVData; templateKey: TemplateKey };
         if (state?.data) {
@@ -263,6 +295,8 @@ export const useCVStore = create<CVStore>()(
           state.data.layout ??= createDefaultLayout();
           state.data.basics.summaryJustify ??= false;
           state.data.basics.photoSize ??= 100;
+          state.data.basics.github ??= "";
+          state.data.basics.personalCustom ??= [];
           state.data.fontScale ??= 100;
           for (const section of state.data.custom) {
             section.kind ??= "list";

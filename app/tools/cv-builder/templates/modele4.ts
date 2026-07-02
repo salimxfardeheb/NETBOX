@@ -14,6 +14,22 @@ import {
   VerticalAlign,
   WidthType,
 } from "docx";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import {
+  Cake,
+  Car,
+  Flag,
+  Github,
+  Globe,
+  Heart,
+  Info,
+  Linkedin,
+  Mail,
+  MapPin,
+  Phone,
+  type LucideIcon,
+} from "lucide-react";
 import type { CVData, CVEntry, CVSectionId } from "../lib/types";
 import { levelToPercent } from "../lib/levels";
 
@@ -73,23 +89,181 @@ export const MODELE4_SECTION_TITLES: Record<string, string> = {
   informatique: "Informatique",
 };
 
-/** Lignes du bloc "Informations personnelles" du corps du CV. */
-export function personalLines(data: CVData): string[] {
-  const { basics } = data;
-  return [
-    basics.birthDate?.trim() && `Né(e) le ${basics.birthDate}`,
-    basics.nationality?.trim() && `Nationalité : ${basics.nationality}`,
-    basics.maritalStatus?.trim() && basics.maritalStatus,
-    basics.permis?.trim() && `Permis ${basics.permis}`,
-  ].filter((l): l is string => Boolean(l));
+/** Nature d'une info de contact du bandeau d'en-tête (haut). */
+export type ContactType = "email" | "phone";
+
+/** Nature d'une info du bloc « Informations personnelles » (corps). */
+export type PersonalType =
+  | "birthDate"
+  | "nationality"
+  | "address"
+  | "maritalStatus"
+  | "permis"
+  | "website"
+  | "linkedin"
+  | "github"
+  | "custom";
+
+/** Clé d'icône : toute info porteuse d'une icône (en-tête ou corps). */
+export type IconKey = ContactType | PersonalType;
+
+/**
+ * Icône (composant lucide) associée à chaque info — source unique
+ * partagée par la preview (rendu JSX) et l'export (rastérisation PNG).
+ */
+export const CV_ICONS: Record<IconKey, LucideIcon> = {
+  email: Mail,
+  phone: Phone,
+  birthDate: Cake,
+  nationality: Flag,
+  address: MapPin,
+  maritalStatus: Heart,
+  permis: Car,
+  website: Globe,
+  linkedin: Linkedin,
+  github: Github,
+  custom: Info,
+};
+
+/** Une info porteuse d'une icône : sa nature + sa valeur affichée. */
+export interface ContactItem {
+  type: ContactType;
+  value: string;
+}
+export interface PersonalItem {
+  type: PersonalType;
+  value: string;
 }
 
-/** Lignes de contact du bandeau d'en-tête. */
-export function headerContactLines(data: CVData): string[] {
+/**
+ * Bandeau d'en-tête : uniquement email + téléphone (mis en avant).
+ * Le reste (adresse, liens, etc.) descend dans le bloc du corps.
+ */
+export function headerContactItems(data: CVData): ContactItem[] {
   const { basics } = data;
-  return [basics.email, basics.address, basics.phone, basics.linkedin, basics.website].filter(
-    (l): l is string => Boolean(l?.trim())
+  const source: [ContactType, string | undefined][] = [
+    ["email", basics.email],
+    ["phone", basics.phone],
+  ];
+  return source
+    .filter(([, value]) => Boolean(value?.trim()))
+    .map(([type, value]) => ({ type, value: value!.trim() }));
+}
+
+/**
+ * Bloc « Informations personnelles » du corps : date de naissance,
+ * nationalité, adresse, situation familiale, permis, liens (site, LinkedIn,
+ * GitHub) puis les lignes libres saisies par l'utilisateur.
+ */
+export function personalItems(data: CVData): PersonalItem[] {
+  const { basics } = data;
+  const items: PersonalItem[] = [];
+  const add = (
+    type: PersonalType,
+    raw: string | undefined,
+    format?: (v: string) => string
+  ) => {
+    const v = raw?.trim();
+    if (v) items.push({ type, value: format ? format(v) : v });
+  };
+  add("birthDate", basics.birthDate, (v) => `Né(e) le ${v}`);
+  add("nationality", basics.nationality, (v) => `Nationalité : ${v}`);
+  add("address", basics.address);
+  add("maritalStatus", basics.maritalStatus);
+  add("permis", basics.permis, (v) => `Permis ${v}`);
+  add("website", basics.website);
+  add("linkedin", basics.linkedin);
+  add("github", basics.github);
+  for (const line of basics.personalCustom ?? []) add("custom", line);
+  return items;
+}
+
+/* ---------- Icônes : rastérisation SVG (lucide) → PNG monochrome ---------- */
+
+/** Couleur des icônes du bandeau (sur fond bleu nuit). */
+const HEADER_ICON_COLOR = `#${C.headerContact}`;
+/** Couleur des icônes du corps (sur fond blanc), assortie aux titres. */
+const BODY_ICON_COLOR = `#${C.accent}`;
+/** Résolution des PNG d'icônes — net quelle que soit la taille d'affichage. */
+const ICON_RASTER_PX = 96;
+
+/** PNG d'icônes préparés pour la construction en cours (clé `type|couleur`). */
+let iconPngs = new Map<string, Uint8Array>();
+
+function iconCacheKey(key: IconKey, colorHex: string): string {
+  return `${key}|${colorHex}`;
+}
+
+/** Taille d'affichage d'une icône (px) alignée sur une taille de texte. */
+function iconPx(halfPoints: number): number {
+  return Math.max(8, Math.round(((halfPoints * 2) / 3) * scale));
+}
+
+function dataUrlToBytes(dataUrl: string): Uint8Array {
+  const binary = atob(dataUrl.slice(dataUrl.indexOf(",") + 1));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+/** Rastérise une icône lucide en PNG transparent (traits colorés). */
+async function rasterizeIcon(key: IconKey, colorHex: string): Promise<Uint8Array> {
+  const svg = renderToStaticMarkup(
+    createElement(CV_ICONS[key], {
+      color: colorHex,
+      size: ICON_RASTER_PX,
+      strokeWidth: 2,
+    })
   );
+  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = ICON_RASTER_PX;
+    canvas.height = ICON_RASTER_PX;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Contexte canvas 2D indisponible");
+    ctx.drawImage(img, 0, 0, ICON_RASTER_PX, ICON_RASTER_PX);
+    return dataUrlToBytes(canvas.toDataURL("image/png"));
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/** Prépare (une fois par export) les PNG des icônes utilisées par ce CV. */
+async function loadIcons(data: CVData): Promise<void> {
+  iconPngs = new Map();
+  // La rastérisation utilise le DOM : côté serveur, on rend sans icônes.
+  if (typeof document === "undefined") return;
+  const needed = new Map<string, [IconKey, string]>();
+  for (const it of headerContactItems(data)) {
+    needed.set(iconCacheKey(it.type, HEADER_ICON_COLOR), [it.type, HEADER_ICON_COLOR]);
+  }
+  for (const it of personalItems(data)) {
+    needed.set(iconCacheKey(it.type, BODY_ICON_COLOR), [it.type, BODY_ICON_COLOR]);
+  }
+  await Promise.all(
+    [...needed.values()].map(async ([key, color]) => {
+      try {
+        iconPngs.set(iconCacheKey(key, color), await rasterizeIcon(key, color));
+      } catch {
+        // Icône indisponible : la ligne s'affichera en texte seul.
+      }
+    })
+  );
+}
+
+/** ImageRun de l'icône préparée, ou null si absente (fallback texte seul). */
+function iconRun(key: IconKey, colorHex: string, px: number): ImageRun | null {
+  const data = iconPngs.get(iconCacheKey(key, colorHex));
+  if (!data) return null;
+  return new ImageRun({
+    type: "png",
+    data,
+    transformation: { width: px, height: px },
+  });
 }
 
 function heading(text: string): Paragraph {
@@ -206,17 +380,21 @@ function renderSection(id: CVSectionId, data: CVData): Block[] {
 
   switch (id) {
     case "contact": {
-      const lines = personalLines(data);
-      if (lines.length === 0) return [];
+      const items = personalItems(data);
+      if (items.length === 0) return [];
+      const px = iconPx(21);
       return [
         heading(MODELE4_SECTION_TITLES.contact),
-        ...lines.map(
-          (text, i) =>
-            new Paragraph({
-              spacing: { after: sp(i === lines.length - 1 ? 140 : 40) },
-              children: [new TextRun({ text, color: "333333", size: sz(21) })],
-            })
-        ),
+        ...items.map((item, i) => {
+          const icon = iconRun(item.type, BODY_ICON_COLOR, px);
+          return new Paragraph({
+            spacing: { after: sp(i === items.length - 1 ? 140 : 40) },
+            children: [
+              ...(icon ? [icon, new TextRun({ text: "  " })] : []),
+              new TextRun({ text: item.value, color: "333333", size: sz(21) }),
+            ],
+          });
+        }),
       ];
     }
 
@@ -348,9 +526,11 @@ function noBordersCell(options: ConstructorParameters<typeof TableCell>[0]): Tab
  * (photo / nom + contact sur fond bleu nuit) puis deux colonnes
  * blanches égales dont les sections suivent `data.layout`.
  */
-export function buildModele4(data: CVData): Document {
+export async function buildModele4(data: CVData): Promise<Document> {
   const { basics } = data;
   scale = (data.fontScale ?? 100) / 100;
+  // Prépare les PNG d'icônes avant de construire le document (rendu sync).
+  await loadIcons(data);
 
   /* ---------- Bandeau d'en-tête ---------- */
   const photoPx = Math.round(115 * ((basics.photoSize ?? 100) / 100));
@@ -376,7 +556,7 @@ export function buildModele4(data: CVData): Document {
     photoChildren.push(new Paragraph({ alignment: AlignmentType.CENTER }));
   }
 
-  const contactLines = headerContactLines(data);
+  const contactItems = headerContactItems(data);
 
   const header = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
@@ -424,16 +604,22 @@ export function buildModele4(data: CVData): Document {
             verticalAlign: VerticalAlign.CENTER,
             margins: { top: 220, bottom: 220, left: 80, right: 200 },
             children:
-              contactLines.length > 0
-                ? contactLines.map(
-                    (text) =>
-                      new Paragraph({
-                        spacing: { after: sp(40) },
-                        children: [
-                          new TextRun({ text, color: C.headerContact, size: sz(19) }),
-                        ],
-                      })
-                  )
+              contactItems.length > 0
+                ? contactItems.map((item) => {
+                    // Email + téléphone : texte agrandi, précédé de leur icône.
+                    const icon = iconRun(item.type, HEADER_ICON_COLOR, iconPx(22));
+                    return new Paragraph({
+                      spacing: { after: sp(80) },
+                      children: [
+                        ...(icon ? [icon, new TextRun({ text: "  " })] : []),
+                        new TextRun({
+                          text: item.value,
+                          color: C.headerContact,
+                          size: sz(22),
+                        }),
+                      ],
+                    });
+                  })
                 : [new Paragraph("")],
           }),
         ],

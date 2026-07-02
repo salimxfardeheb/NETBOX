@@ -10,9 +10,9 @@ import { cn } from "@/lib/cn";
 
 /** Style commun des champs — lisible sur fond sombre. */
 const fieldClasses =
-  "w-full rounded-lg border border-glass-border bg-white/[0.04] px-3 py-2 text-sm text-content-primary " +
-  "placeholder:text-content-secondary/60 transition-colors " +
-  "focus:border-accent focus:outline-none";
+  "w-full rounded-lg border border-glass-border bg-field px-3 py-2 text-sm text-content-primary " +
+  "placeholder:text-content-secondary/60 transition-colors hover:border-content-secondary/40 " +
+  "focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30";
 
 /** Label + contrôle empilés. */
 export function Field({

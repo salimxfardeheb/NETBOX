@@ -1,6 +1,13 @@
 "use client";
 
-import { AlignLeft, Briefcase, List, Plus, Trash2, X } from "lucide-react";
+import {
+  FaAlignLeft,
+  FaBriefcase,
+  FaListUl,
+  FaPlus,
+  FaTrashAlt,
+  FaTimes,
+} from "react-icons/fa";
 import { Button } from "@/components/ui/Button";
 import type { CVCustomKind, CVCustomSection, CVEntry } from "../../lib/types";
 import { useCVStore } from "../../lib/store";
@@ -30,7 +37,7 @@ function EntryEditor({
   const bullets = entry.bullets ?? [];
 
   return (
-    <div className="space-y-3 rounded-lg border border-glass-border bg-white/[0.02] p-3">
+    <div className="space-y-3 rounded-lg border border-glass-border bg-surface p-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Intitulé" className="sm:col-span-2">
           <TextInput
@@ -77,22 +84,22 @@ function EntryEditor({
             />
             <Button
               variant="ghost"
-              size="sm"
-              className="h-8 w-8 shrink-0 p-0 hover:text-red-400"
+              size="icon"
+              className="shrink-0 hover:text-red-400"
               aria-label="Supprimer la puce"
               onClick={() => onChange({ bullets: bullets.filter((_, j) => j !== i) })}
             >
-              <X className="h-4 w-4" />
+              <FaTimes className="h-4 w-4" />
             </Button>
           </div>
         ))}
         <div className="flex justify-between">
           <Button
-            variant="ghost"
+            variant="add"
             size="sm"
             onClick={() => onChange({ bullets: [...bullets, ""] })}
           >
-            <Plus className="h-3.5 w-3.5" />
+            <FaPlus className="h-3.5 w-3.5" />
             Ajouter une puce
           </Button>
           <Button
@@ -101,7 +108,7 @@ function EntryEditor({
             className="hover:text-red-400"
             onClick={onRemove}
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <FaTrashAlt className="h-3.5 w-3.5" />
             Supprimer l&apos;élément
           </Button>
         </div>
@@ -118,7 +125,7 @@ function CustomBlockEditor({ section }: { section: CVCustomSection }) {
     updateCustomSection(section.id, patch);
 
   return (
-    <div className="space-y-3 rounded-xl border border-glass-border bg-white/[0.03] p-4">
+    <div className="space-y-3 rounded-xl border border-glass-border bg-surface p-4">
       <div className="flex items-end gap-2">
         <Field label={`Titre du bloc (${KIND_LABELS[section.kind]})`} className="flex-1">
           <TextInput
@@ -129,12 +136,12 @@ function CustomBlockEditor({ section }: { section: CVCustomSection }) {
         </Field>
         <Button
           variant="ghost"
-          size="sm"
-          className="h-9 w-9 shrink-0 p-0 hover:text-red-400"
+          size="icon"
+          className="shrink-0 hover:text-red-400"
           aria-label="Supprimer le bloc"
           onClick={() => removeCustomSection(section.id)}
         >
-          <Trash2 className="h-4 w-4" />
+          <FaTrashAlt className="h-4 w-4" />
         </Button>
       </div>
 
@@ -154,23 +161,23 @@ function CustomBlockEditor({ section }: { section: CVCustomSection }) {
               />
               <Button
                 variant="ghost"
-                size="sm"
-                className="h-8 w-8 shrink-0 p-0 hover:text-red-400"
+                size="icon"
+                className="shrink-0 hover:text-red-400"
                 aria-label="Supprimer la ligne"
                 onClick={() =>
                   update({ items: (section.items ?? []).filter((_, i) => i !== index) })
                 }
               >
-                <X className="h-4 w-4" />
+                <FaTimes className="h-4 w-4" />
               </Button>
             </div>
           ))}
           <Button
-            variant="ghost"
+            variant="add"
             size="sm"
             onClick={() => update({ items: [...(section.items ?? []), ""] })}
           >
-            <Plus className="h-3.5 w-3.5" />
+            <FaPlus className="h-3.5 w-3.5" />
             Ajouter une ligne
           </Button>
         </div>
@@ -203,11 +210,11 @@ function CustomBlockEditor({ section }: { section: CVCustomSection }) {
             />
           ))}
           <Button
-            variant="ghost"
+            variant="add"
             size="sm"
             onClick={() => update({ entries: [...(section.entries ?? []), emptyEntry()] })}
           >
-            <Plus className="h-3.5 w-3.5" />
+            <FaPlus className="h-3.5 w-3.5" />
             Ajouter un élément
           </Button>
         </div>
@@ -237,16 +244,16 @@ export function CustomSections() {
           Ajouter un bloc :
         </span>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={() => addCustomSection("list")}>
-            <List className="h-4 w-4" />
+          <Button variant="add" size="sm" onClick={() => addCustomSection("list")}>
+            <FaListUl className="h-4 w-4" />
             Liste à puces
           </Button>
-          <Button size="sm" onClick={() => addCustomSection("entries")}>
-            <Briefcase className="h-4 w-4" />
+          <Button variant="add" size="sm" onClick={() => addCustomSection("entries")}>
+            <FaBriefcase className="h-4 w-4" />
             Type expérience
           </Button>
-          <Button size="sm" onClick={() => addCustomSection("text")}>
-            <AlignLeft className="h-4 w-4" />
+          <Button variant="add" size="sm" onClick={() => addCustomSection("text")}>
+            <FaAlignLeft className="h-4 w-4" />
             Texte libre
           </Button>
         </div>

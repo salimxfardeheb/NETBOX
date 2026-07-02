@@ -5,8 +5,9 @@ import { buildModele4 } from "./modele4";
 export interface CVTemplate {
   /** Libellé affiché dans le sélecteur de template. */
   label: string;
-  /** Construit le document Word complet à partir des données. */
-  build: (data: CVData) => Document;
+  /** Construit le document Word complet à partir des données (async :
+   *  la rastérisation des icônes utilise le DOM). */
+  build: (data: CVData) => Document | Promise<Document>;
 }
 
 /**

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ChevronDown } from "lucide-react";
+import { FaChevronDown } from "react-icons/fa";
 import { cn } from "@/lib/cn";
 
 /**
@@ -25,12 +25,15 @@ export function FormSection({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between px-5 py-4 text-left"
+        className={cn(
+          "flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-surface",
+          open ? "rounded-t-glass" : "rounded-glass"
+        )}
       >
         <span className="text-base font-semibold text-content-primary">
           {title}
         </span>
-        <ChevronDown
+        <FaChevronDown
           className={cn(
             "h-4 w-4 shrink-0 text-content-secondary transition-transform duration-200",
             open && "rotate-180"

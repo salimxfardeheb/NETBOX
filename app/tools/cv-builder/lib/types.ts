@@ -25,6 +25,9 @@ export interface CVBasics {
   maritalStatus?: string;
   linkedin?: string;
   website?: string;
+  github?: string;
+  /** Lignes d'infos personnelles libres ajoutées par l'utilisateur. */
+  personalCustom?: string[];
 }
 
 export interface CVLanguage {

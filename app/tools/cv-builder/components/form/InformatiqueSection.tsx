@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { FaPlus } from "react-icons/fa";
 import { Button } from "@/components/ui/Button";
 import { useCVStore } from "../../lib/store";
 import { FormSection } from "./FormSection";
@@ -13,7 +13,6 @@ export function InformatiqueSection() {
   const addItem = useCVStore((s) => s.addItem);
   const updateItem = useCVStore((s) => s.updateItem);
   const removeItem = useCVStore((s) => s.removeItem);
-  const moveItem = useCVStore((s) => s.moveItem);
   const reorderItem = useCVStore((s) => s.reorderItem);
 
   const ids = categories.map((_, i) => `info-${i}`);
@@ -24,7 +23,7 @@ export function InformatiqueSection() {
         <div className="space-y-3">
           {categories.map((category, index) => (
             <SortableRow key={ids[index]} id={ids[index]}>
-              <div className="flex items-end gap-2 rounded-xl border border-glass-border bg-white/[0.03] p-3">
+              <div className="flex items-end gap-2 rounded-xl border border-glass-border bg-surface p-3">
                 <Field label="Catégorie" className="w-44">
                   <TextInput
                     value={category.label}
@@ -44,12 +43,7 @@ export function InformatiqueSection() {
                   />
                 </Field>
                 <div className="pb-1">
-                  <ItemControls
-                    index={index}
-                    count={categories.length}
-                    onMove={(dir) => moveItem("informatique", index, dir)}
-                    onRemove={() => removeItem("informatique", index)}
-                  />
+                  <ItemControls onRemove={() => removeItem("informatique", index)} />
                 </div>
               </div>
             </SortableRow>
@@ -57,8 +51,13 @@ export function InformatiqueSection() {
         </div>
       </SortableList>
 
-      <Button size="sm" onClick={() => addItem("informatique")}>
-        <Plus className="h-4 w-4" />
+      <Button
+        variant="add"
+        size="sm"
+        className="w-full"
+        onClick={() => addItem("informatique")}
+      >
+        <FaPlus className="h-4 w-4" />
         Ajouter une catégorie
       </Button>
     </FormSection>

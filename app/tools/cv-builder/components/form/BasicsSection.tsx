@@ -2,18 +2,34 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useRef, type ChangeEvent } from "react";
-import { AlignJustify, AlignLeft, ImagePlus, X } from "lucide-react";
+import {
+  FaAlignJustify,
+  FaAlignLeft,
+  FaRegFileAlt,
+  FaRegImage,
+  FaPlus,
+  FaTimes,
+} from "react-icons/fa";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
 import { useCVStore } from "../../lib/store";
 import { FormSection } from "./FormSection";
+import { ItemControls } from "./ItemControls";
+import { SortableList, SortableRow } from "./SortableList";
 import { Field, TextArea, TextInput } from "./fields";
 
 export function BasicsSection() {
   const basics = useCVStore((s) => s.data.basics);
   const setBasics = useCVStore((s) => s.setBasics);
   const setPhoto = useCVStore((s) => s.setPhoto);
+  const addPersonalCustom = useCVStore((s) => s.addPersonalCustom);
+  const updatePersonalCustom = useCVStore((s) => s.updatePersonalCustom);
+  const removePersonalCustom = useCVStore((s) => s.removePersonalCustom);
+  const reorderPersonalCustom = useCVStore((s) => s.reorderPersonalCustom);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const personalCustom = basics.personalCustom ?? [];
+  const personalCustomIds = personalCustom.map((_, i) => `personal-${i}`);
 
   const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -39,7 +55,7 @@ export function BasicsSection() {
           />
         ) : (
           <div className="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-glass-border text-content-secondary">
-            <ImagePlus className="h-5 w-5" />
+            <FaRegImage className="h-5 w-5" />
           </div>
         )}
         <div className="flex flex-wrap gap-2">
@@ -48,7 +64,7 @@ export function BasicsSection() {
           </Button>
           {basics.photo && (
             <Button variant="ghost" size="sm" onClick={() => setPhoto(null)}>
-              <X className="h-3.5 w-3.5" />
+              <FaTimes className="h-3.5 w-3.5" />
               Retirer la photo
             </Button>
           )}
@@ -167,36 +183,81 @@ export function BasicsSection() {
             onChange={(e) => setBasics({ website: e.target.value })}
           />
         </Field>
+        <Field label="GitHub">
+          <TextInput
+            value={basics.github ?? ""}
+            placeholder="github.com/pseudo"
+            onChange={(e) => setBasics({ github: e.target.value })}
+          />
+        </Field>
+
+        {/* Infos personnelles libres — chacune avec une icône générique. */}
+        <div className="space-y-2 sm:col-span-2">
+          <span className="text-xs font-medium text-content-secondary">
+            Autres infos personnelles
+          </span>
+          <SortableList
+            ids={personalCustomIds}
+            onReorder={(from, to) => reorderPersonalCustom(from, to)}
+          >
+            <div className="space-y-2">
+              {personalCustom.map((value, index) => (
+                <SortableRow key={personalCustomIds[index]} id={personalCustomIds[index]}>
+                  <div className="flex items-center gap-2">
+                    <TextInput
+                      value={value}
+                      placeholder="Ex. Disponibilité : immédiate"
+                      onChange={(e) => updatePersonalCustom(index, e.target.value)}
+                    />
+                    <ItemControls onRemove={() => removePersonalCustom(index)} />
+                  </div>
+                </SortableRow>
+              ))}
+            </div>
+          </SortableList>
+          <Button
+            variant="add"
+            size="sm"
+            className="w-full"
+            onClick={addPersonalCustom}
+          >
+            <FaPlus className="h-4 w-4" />
+            Ajouter une info
+          </Button>
+        </div>
+
         <div className="space-y-1.5 sm:col-span-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-content-secondary">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-content-secondary">
+              <FaRegFileAlt className="h-3.5 w-3.5" />
               Résumé / profil
             </span>
             {/* Alignement du résumé (preview + export Word). */}
             <div className="flex gap-1">
               <Button
                 variant="ghost"
-                size="sm"
-                className={cn("h-7 w-7 p-0", !basics.summaryJustify && "glass-active")}
+                size="icon-sm"
+                className={cn(!basics.summaryJustify && "glass-active")}
                 aria-label="Aligner à gauche"
                 title="Aligné à gauche"
                 onClick={() => setBasics({ summaryJustify: false })}
               >
-                <AlignLeft className="h-3.5 w-3.5" />
+                <FaAlignLeft className="h-3.5 w-3.5" />
               </Button>
               <Button
                 variant="ghost"
-                size="sm"
-                className={cn("h-7 w-7 p-0", basics.summaryJustify && "glass-active")}
+                size="icon-sm"
+                className={cn(basics.summaryJustify && "glass-active")}
                 aria-label="Justifier"
                 title="Justifié"
                 onClick={() => setBasics({ summaryJustify: true })}
               >
-                <AlignJustify className="h-3.5 w-3.5" />
+                <FaAlignJustify className="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
           <TextArea
+            rows={8}
             value={basics.summary ?? ""}
             placeholder="Quelques lignes qui résument votre parcours…"
             onChange={(e) => setBasics({ summary: e.target.value })}
