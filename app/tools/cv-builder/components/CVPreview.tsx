@@ -46,8 +46,18 @@ const HEADER_CONTACT = `#${MODELE4_COLORS.headerContact}`;
  * pour la colonne) garantit que la taille du texte à l'écran correspond
  * exactement au document Word, quelle que soit la largeur de l'écran.
  */
-const A4_W = 595; // 210 mm
-const A4_H = 842; // 297 mm
+const A4_W = 595; // 210 mm — largeur A4 (base des polices : 1 px = 1 pt)
+const A4_H = 842; // 297 mm — hauteur A4 (forme de la feuille vide)
+
+/*
+ * Hauteur de contenu par page pour le repère de coupe (trait rouge).
+ * Sensiblement plus grande que l'A4 stricte (842) : l'aperçu (CSS) est un
+ * peu plus aéré que l'export .docx (interlignes/espacements `sp()` très
+ * serrés), donc à contenu égal l'aperçu est plus haut. Cette valeur est
+ * calibrée pour qu'un CV tenant sur 1 page dans Word n'affiche pas de coupe
+ * ici. Ajuster si le trait tombe trop haut/bas vs le .docx téléchargé.
+ */
+const PAGE_BREAK_H = 960;
 
 /*
  * Tailles de texte en `em` : la base (1em) est fixée sur la feuille
@@ -193,11 +203,11 @@ function SectionContent({ id, data }: { id: CVSectionId; data: CVData }) {
                     {lang.name}
                   </p>
                   <div
-                    className="h-[5px] w-full"
+                    className="h-[5px] w-[60%] overflow-hidden rounded-full"
                     style={{ backgroundColor: BAR_TRACK }}
                   >
                     <div
-                      className="h-full transition-[width] duration-300"
+                      className="h-full rounded-full transition-[width] duration-300"
                       style={{
                         width: `${levelToPercent(lang)}%`,
                         backgroundColor: ACCENT,
@@ -373,6 +383,36 @@ export function CVPreview({
   const photoPx = Math.round(105 * ((basics.photoSize ?? 100) / 100));
   const baseFontPx = ((data.fontScale ?? 100) / 100) * 10;
 
+  // Mesure de la largeur dispo (colonne) et de la hauteur réelle du contenu,
+  // pour mettre la feuille A4 à l'échelle et détecter le débordement de page.
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const [wrapW, setWrapW] = useState(A4_W);
+  const [sheetH, setSheetH] = useState(A4_H);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => setWrapW(entries[0].contentRect.width));
+    ro.observe(el);
+    setWrapW(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const el = sheetRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setSheetH(el.scrollHeight));
+    ro.observe(el);
+    setSheetH(el.scrollHeight);
+    return () => ro.disconnect();
+  }, []);
+
+  // Échelle : on remplit la colonne sans jamais dépasser la taille réelle
+  // (k ≤ 1) — ainsi le glisser-déposer reste précis sur écrans standards.
+  const k = Math.min(1, wrapW / A4_W);
+  const pageCount = Math.max(1, Math.ceil(sheetH / PAGE_BREAK_H));
+
   const visibleLeft = layout.left.filter((id) => isSectionVisible(id, data));
   const visibleRight = layout.right.filter((id) => isSectionVisible(id, data));
 
@@ -420,88 +460,101 @@ export function CVPreview({
   };
 
   const document = (
-    <div
-      data-cv-sheet
-      className="relative overflow-hidden rounded-xl bg-white shadow-2xl"
-      // aspect-ratio garantit une feuille au moins au format A4 ;
-      // le contenu qui déborde correspond à une 2ᵉ page à l'export.
-      style={{ fontSize: `${baseFontPx}px`, aspectRatio: "210 / 297" }}
-    >
-      {/* Repère de fin de page 1 (masqué à l'export, preview uniquement) */}
-      {editable && (
+    <div ref={wrapRef} className="flex w-full justify-center">
+      {/* Boîte à l'échelle : réserve l'espace réel du rendu mis à l'échelle. */}
+      <div className="relative" style={{ width: A4_W * k, height: sheetH * k }}>
         <div
-          aria-hidden
-          className="pointer-events-none absolute left-0 top-0 z-10 w-full"
-          style={{ aspectRatio: "210 / 297" }}
+          ref={sheetRef}
+          data-cv-sheet
+          className="absolute left-0 top-0 origin-top-left overflow-hidden rounded-xl bg-white shadow-2xl"
+          style={{
+            width: A4_W,
+            minHeight: A4_H,
+            fontSize: `${baseFontPx}px`,
+            transform: `scale(${k})`,
+          }}
         >
-          <div className="absolute bottom-0 w-full border-b-2 border-dashed border-red-400/60" />
-          <span className="absolute bottom-0.5 right-2 text-[9px] font-medium text-red-400/80">
-            Fin de la page 1
-          </span>
-        </div>
-      )}
-      {/* Bandeau d'en-tête */}
-      <div className="flex min-h-[150px]">
-        <div
-          className="flex w-[22%] shrink-0 items-center justify-center p-2"
-          style={{ backgroundColor: PHOTO_BG }}
-        >
-          {basics.photo && (
-            <img
-              src={basics.photo}
-              alt="Photo de profil"
-              className="max-w-full object-cover"
-              style={{ width: photoPx, height: photoPx }}
-            />
-          )}
-        </div>
-        <div
-          className="flex w-[46%] flex-col justify-center px-4 py-3"
-          style={{ backgroundColor: HEADER_BG }}
-        >
-          <p className="text-[2.5em] leading-tight text-white">
-            {firstName}{" "}
-            <span className="font-bold uppercase">{lastName}</span>
-          </p>
-          <p className="mt-1 text-[1.35em]" style={{ color: HEADER_TITLE }}>
-            {title}
-          </p>
-        </div>
-        <div
-          className="flex w-[32%] flex-col justify-center px-4 py-3"
-          style={{ backgroundColor: HEADER_BG }}
-        >
-          {/* En-tête : uniquement email + téléphone, agrandis et avec icône. */}
-          <ul className="space-y-2 text-[1.1em]" style={{ color: HEADER_CONTACT }}>
-            {contactItems.map((item, i) => {
-              const Icon = CV_ICONS[item.type];
-              return (
-                <li key={i} className="flex items-start gap-1.5 break-words">
-                  <Icon className="mt-[0.15em] h-[1.05em] w-[1.05em] shrink-0" />
-                  <span className="min-w-0 break-words">{item.value}</span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      </div>
+          {/* Séparateurs de page — apparaissent dès que le contenu déborde
+              sur une page suivante (aperçu uniquement). */}
+          {pageCount > 1 &&
+            Array.from({ length: pageCount - 1 }, (_, i) => (
+              <div
+                key={i}
+                aria-hidden
+                className="pointer-events-none absolute left-0 z-20 w-full"
+                style={{ top: (i + 1) * PAGE_BREAK_H }}
+              >
+                <div className="w-full border-t-2 border-dashed border-red-400/60" />
+                <span className="absolute right-2 top-1 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-600 shadow-sm">
+                  Page {i + 2}
+                </span>
+              </div>
+            ))}
 
-      {/* Corps : deux colonnes */}
-      <div className="grid grid-cols-2 gap-x-6 px-5 py-4">
-        <PreviewColumn column="left" ids={visibleLeft}>
-          {visibleLeft.map((id) => (
-            <SortableSection key={id} id={id} editable={editable}>
-              <SectionContent id={id} data={data} />
-            </SortableSection>
-          ))}
-        </PreviewColumn>
-        <PreviewColumn column="right" ids={visibleRight}>
-          {visibleRight.map((id) => (
-            <SortableSection key={id} id={id} editable={editable}>
-              <SectionContent id={id} data={data} />
-            </SortableSection>
-          ))}
-        </PreviewColumn>
+          {/* Bandeau d'en-tête */}
+          <div className="flex min-h-[150px]">
+            <div
+              className="flex w-[22%] shrink-0 items-center justify-center p-2"
+              style={{ backgroundColor: PHOTO_BG }}
+            >
+              {basics.photo && (
+                <img
+                  src={basics.photo}
+                  alt="Photo de profil"
+                  className="max-w-full object-cover"
+                  style={{ width: photoPx, height: photoPx }}
+                />
+              )}
+            </div>
+            <div
+              className="flex w-[46%] flex-col justify-center px-4 py-3"
+              style={{ backgroundColor: HEADER_BG }}
+            >
+              <p className="text-[2.6em] leading-tight text-white">
+                {firstName}{" "}
+                <span className="font-bold uppercase">{lastName}</span>
+              </p>
+              <p className="mt-1 text-[1.4em]" style={{ color: HEADER_TITLE }}>
+                {title}
+              </p>
+            </div>
+            <div
+              className="flex w-[32%] flex-col justify-center px-4 py-3"
+              style={{ backgroundColor: HEADER_BG }}
+            >
+              {/* En-tête : uniquement email + téléphone, agrandis et avec icône. */}
+              <ul className="space-y-2 text-[1.1em]" style={{ color: HEADER_CONTACT }}>
+                {contactItems.map((item, i) => {
+                  const Icon = CV_ICONS[item.type];
+                  return (
+                    <li key={i} className="flex items-start gap-1.5 break-words">
+                      <Icon className="mt-[0.15em] h-[1.05em] w-[1.05em] shrink-0" />
+                      <span className="min-w-0 break-words">{item.value}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+
+          {/* Corps : deux colonnes */}
+          <div className="grid grid-cols-2 gap-x-6 px-5 py-4">
+            <PreviewColumn column="left" ids={visibleLeft}>
+              {visibleLeft.map((id) => (
+                <SortableSection key={id} id={id} editable={editable}>
+                  <SectionContent id={id} data={data} />
+                </SortableSection>
+              ))}
+            </PreviewColumn>
+            <PreviewColumn column="right" ids={visibleRight}>
+              {visibleRight.map((id) => (
+                <SortableSection key={id} id={id} editable={editable}>
+                  <SectionContent id={id} data={data} />
+                </SortableSection>
+              ))}
+            </PreviewColumn>
+          </div>
+        </div>
       </div>
     </div>
   );

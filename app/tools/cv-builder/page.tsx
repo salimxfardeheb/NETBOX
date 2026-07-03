@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Download, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -23,38 +23,18 @@ export default function CVBuilderPage() {
   const topbarSlot = useTopbarSlot((s) => s.el);
 
   const [exporting, setExporting] = useState(false);
-  const previewWrapRef = useRef<HTMLDivElement>(null);
 
   // L'état vient du localStorage (persist) : on attend le montage client
   // pour éviter un mismatch d'hydratation avec le rendu serveur.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  /** Attend deux frames pour laisser la preview se re-rendre. */
-  const nextFrame = () =>
-    new Promise<void>((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-    );
-
-  /** Vrai si la preview tient dans une page A4 (hauteur = largeur × 297/210). */
-  const fitsOnePage = () => {
-    const sheet =
-      previewWrapRef.current?.querySelector<HTMLElement>("[data-cv-sheet]");
-    if (!sheet) return true;
-    return sheet.scrollHeight <= (sheet.clientWidth * 297) / 210 + 2;
-  };
-
+  // Export à la taille choisie par l'utilisateur : pas de réduction
+  // automatique. Si le contenu déborde, le .docx fait plusieurs pages
+  // (le débordement est visible dans l'aperçu).
   const handleExport = async () => {
     setExporting(true);
     try {
-      // Ajustement automatique : réduit l'écriture pas à pas (jusqu'à
-      // 70 %) pour que le CV tienne sur une seule page bien lisible.
-      let currentScale = useCVStore.getState().data.fontScale ?? 100;
-      while (!fitsOnePage() && currentScale > 70) {
-        currentScale -= 5;
-        setFontScale(currentScale);
-        await nextFrame();
-      }
       await exportToWord(useCVStore.getState().data, templateKey);
     } finally {
       setExporting(false);
@@ -150,10 +130,8 @@ export default function CVBuilderPage() {
         <div className="w-full lg:w-[48%]">
           <CVForm />
         </div>
-        <div
-          ref={previewWrapRef}
-          className="w-full lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:w-[52%] lg:overflow-y-auto"
-        >
+        <div className="w-full lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:w-[52%] lg:overflow-y-auto">
+
           <CVPreview data={data} onLayoutChange={setLayout} />
         </div>
       </div>

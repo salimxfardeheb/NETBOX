@@ -40,6 +40,25 @@ export function createDefaultLayout(): CVLayout {
   };
 }
 
+/** Atouts (compétences comportementales) pré-remplis par défaut. */
+export const DEFAULT_ATOUTS = [
+  "Esprit d'équipe",
+  "Communication",
+  "Sens des responsabilités",
+  "Rigueur",
+  "Autonomie",
+  "Adaptabilité",
+];
+
+/** Centres d'intérêt pré-remplis par défaut. */
+export const DEFAULT_INTERESTS = [
+  "Lecture & apprentissage",
+  "Créativité",
+  "Bien-être",
+  "Photographie",
+  "Voyages",
+];
+
 export function createEmptyCV(): CVData {
   return {
     basics: {
@@ -62,8 +81,8 @@ export function createEmptyCV(): CVData {
       personalCustom: [],
     },
     languages: [],
-    atouts: [],
-    interests: [],
+    atouts: [...DEFAULT_ATOUTS],
+    interests: [...DEFAULT_INTERESTS],
     education: [],
     experience: [],
     informatique: [],
@@ -280,7 +299,7 @@ export const useCVStore = create<CVStore>()(
     })),
     {
       name: "cv-builder-state",
-      version: 4,
+      version: 5,
       partialize: (state) => ({
         data: state.data,
         templateKey: state.templateKey,
@@ -288,6 +307,7 @@ export const useCVStore = create<CVStore>()(
       // v1 n'avait ni custom, ni layout, ni summaryJustify.
       // v2 n'avait ni kind sur les blocs custom, ni fontScale/photoSize.
       // v3 n'avait ni github, ni infos personnelles libres (personalCustom).
+      // v4 n'avait pas de valeurs par défaut pour Atouts / Centres d'intérêt.
       migrate: (persisted) => {
         const state = persisted as { data: CVData; templateKey: TemplateKey };
         if (state?.data) {
@@ -298,6 +318,13 @@ export const useCVStore = create<CVStore>()(
           state.data.basics.github ??= "";
           state.data.basics.personalCustom ??= [];
           state.data.fontScale ??= 100;
+          // Pré-remplissage des blocs vides (ne remplace jamais des données saisies).
+          if (!state.data.atouts?.some((v) => v.trim())) {
+            state.data.atouts = [...DEFAULT_ATOUTS];
+          }
+          if (!state.data.interests?.some((v) => v.trim())) {
+            state.data.interests = [...DEFAULT_INTERESTS];
+          }
           for (const section of state.data.custom) {
             section.kind ??= "list";
             section.items ??= [];

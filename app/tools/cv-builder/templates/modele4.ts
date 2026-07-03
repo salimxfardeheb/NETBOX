@@ -4,6 +4,7 @@ import {
   Document,
   HeightRule,
   ImageRun,
+  LineRuleType,
   Paragraph,
   ShadingType,
   Table,
@@ -187,8 +188,19 @@ const BODY_ICON_COLOR = `#${C.accent}`;
 /** Résolution des PNG d'icônes — net quelle que soit la taille d'affichage. */
 const ICON_RASTER_PX = 96;
 
+/** Dimensions d'affichage de la barre de niveau (image PNG arrondie).
+ *  Largeur ≈ 60 % de la colonne, hauteur fine. */
+const BAR_W = 210;
+const BAR_H = 6;
+
 /** PNG d'icônes préparés pour la construction en cours (clé `type|couleur`). */
 let iconPngs = new Map<string, Uint8Array>();
+/** PNG des barres de niveau, clé = pourcentage ×100 arrondi. */
+let barPngs = new Map<number, Uint8Array>();
+
+function barKey(percent: number): number {
+  return Math.round(percent * 100);
+}
 
 function iconCacheKey(key: IconKey, colorHex: string): string {
   return `${key}|${colorHex}`;
@@ -232,27 +244,69 @@ async function rasterizeIcon(key: IconKey, colorHex: string): Promise<Uint8Array
   }
 }
 
-/** Prépare (une fois par export) les PNG des icônes utilisées par ce CV. */
-async function loadIcons(data: CVData): Promise<void> {
+/** Rastérise une barre de niveau arrondie (piste + remplissage) en PNG. */
+async function rasterizeBar(percent: number): Promise<Uint8Array> {
+  const RES = 3; // suréchantillonnage pour des bords nets
+  const w = BAR_W * RES;
+  const h = BAR_H * RES;
+  const r = h / 2; // extrémités entièrement arrondies
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Contexte canvas 2D indisponible");
+  const roundRect = (width: number, color: string) => {
+    ctx.beginPath();
+    ctx.roundRect(0, 0, width, h, r);
+    ctx.fillStyle = color;
+    ctx.fill();
+  };
+  roundRect(w, `#${C.barTrack}`); // piste (100 %)
+  // `percent` est sur une échelle 0–100 → ramener en fraction pour la largeur.
+  const frac = Math.min(1, Math.max(0, percent / 100));
+  if (frac > 0) roundRect(Math.max(h, Math.round(w * frac)), `#${C.accent}`);
+  return dataUrlToBytes(canvas.toDataURL("image/png"));
+}
+
+/** Prépare (une fois par export) les images (icônes + barres) du CV. */
+async function loadAssets(data: CVData): Promise<void> {
   iconPngs = new Map();
-  // La rastérisation utilise le DOM : côté serveur, on rend sans icônes.
+  barPngs = new Map();
+  // La rastérisation utilise le DOM : côté serveur, on rend sans images.
   if (typeof document === "undefined") return;
-  const needed = new Map<string, [IconKey, string]>();
+
+  const icons = new Map<string, [IconKey, string]>();
   for (const it of headerContactItems(data)) {
-    needed.set(iconCacheKey(it.type, HEADER_ICON_COLOR), [it.type, HEADER_ICON_COLOR]);
+    icons.set(iconCacheKey(it.type, HEADER_ICON_COLOR), [it.type, HEADER_ICON_COLOR]);
   }
   for (const it of personalItems(data)) {
-    needed.set(iconCacheKey(it.type, BODY_ICON_COLOR), [it.type, BODY_ICON_COLOR]);
+    icons.set(iconCacheKey(it.type, BODY_ICON_COLOR), [it.type, BODY_ICON_COLOR]);
   }
-  await Promise.all(
-    [...needed.values()].map(async ([key, color]) => {
+
+  const bars = new Map<number, number>(); // clé -> pourcentage
+  for (const lang of data.languages) {
+    if (lang.name.trim()) {
+      const p = levelToPercent(lang);
+      bars.set(barKey(p), p);
+    }
+  }
+
+  await Promise.all([
+    ...[...icons.values()].map(async ([key, color]) => {
       try {
         iconPngs.set(iconCacheKey(key, color), await rasterizeIcon(key, color));
       } catch {
         // Icône indisponible : la ligne s'affichera en texte seul.
       }
-    })
-  );
+    }),
+    ...[...bars.entries()].map(async ([key, percent]) => {
+      try {
+        barPngs.set(key, await rasterizeBar(percent));
+      } catch {
+        // Barre indisponible : ligne de langue sans barre.
+      }
+    }),
+  ]);
 }
 
 /** ImageRun de l'icône préparée, ou null si absente (fallback texte seul). */
@@ -322,37 +376,17 @@ function entryBlocks(entry: CVEntry): Block[] {
   return blocks;
 }
 
-/** Barre de niveau : tableau d'une ligne (partie remplie + piste). */
-function levelBar(percent: number): Table {
-  const filled = Math.round(percent * 50); // largeur en "pct" (5000 = 100 %)
-  const cells: TableCell[] = [];
-
-  if (filled > 0) {
-    cells.push(
-      new TableCell({
-        width: { size: filled, type: WidthType.PERCENTAGE },
-        shading: { type: ShadingType.CLEAR, fill: C.accent },
-        children: [new Paragraph("")],
-      })
-    );
-  }
-  if (filled < 5000) {
-    cells.push(
-      new TableCell({
-        width: { size: 5000 - filled, type: WidthType.PERCENTAGE },
-        shading: { type: ShadingType.CLEAR, fill: C.barTrack },
-        children: [new Paragraph("")],
-      })
-    );
-  }
-
-  return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    borders: TableBorders.NONE,
-    rows: [
-      new TableRow({
-        height: { value: sp(90), rule: HeightRule.EXACT },
-        children: cells,
+/** Barre de niveau : image PNG arrondie (piste + remplissage). */
+function levelBar(percent: number): Paragraph {
+  const png = barPngs.get(barKey(percent));
+  if (!png) return new Paragraph({ spacing: { before: 0, after: 0 } });
+  return new Paragraph({
+    spacing: { before: 0, after: 0 },
+    children: [
+      new ImageRun({
+        type: "png",
+        data: png,
+        transformation: { width: BAR_W, height: BAR_H },
       }),
     ],
   });
@@ -529,8 +563,8 @@ function noBordersCell(options: ConstructorParameters<typeof TableCell>[0]): Tab
 export async function buildModele4(data: CVData): Promise<Document> {
   const { basics } = data;
   scale = (data.fontScale ?? 100) / 100;
-  // Prépare les PNG d'icônes avant de construire le document (rendu sync).
-  await loadIcons(data);
+  // Prépare les images (icônes + barres) avant de construire le document.
+  await loadAssets(data);
 
   /* ---------- Bandeau d'en-tête ---------- */
   const photoPx = Math.round(115 * ((basics.photoSize ?? 100) / 100));
@@ -667,7 +701,18 @@ export async function buildModele4(data: CVData): Promise<Document> {
             margin: { top: 340, bottom: 340, left: 340, right: 340 },
           },
         },
-        children: [header, new Paragraph({ spacing: { after: sp(40) } }), body],
+        children: [
+          header,
+          new Paragraph({ spacing: { after: sp(40) } }),
+          body,
+          // Word exige un paragraphe après un tableau ; on le réduit à ~0
+          // (hauteur exacte 1 pt, texte vide) pour éviter une page blanche
+          // superflue quand le corps remplit presque la page.
+          new Paragraph({
+            spacing: { before: 0, after: 0, line: 20, lineRule: LineRuleType.EXACT },
+            children: [new TextRun({ text: "", size: 2 })],
+          }),
+        ],
       },
     ],
   });
