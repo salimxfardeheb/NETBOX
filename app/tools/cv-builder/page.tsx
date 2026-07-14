@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Download, Loader2, RotateCcw } from "lucide-react";
+import { ChevronDown, Download, FileText, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/cn";
 import { useTopbarSlot } from "@/lib/topbar-slot";
 import { CVPreview } from "./components/CVPreview";
 import { CVForm } from "./components/form/CVForm";
 import { Select } from "./components/form/fields";
-import { exportToWord } from "./lib/export";
+import { exportToPdf, exportToWord } from "./lib/export";
 import { useCVStore } from "./lib/store";
 import { templates, type TemplateKey } from "./templates";
+
+type ExportFormat = "docx" | "pdf";
 
 export default function CVBuilderPage() {
   const data = useCVStore((s) => s.data);
@@ -23,6 +26,19 @@ export default function CVBuilderPage() {
   const topbarSlot = useTopbarSlot((s) => s.el);
 
   const [exporting, setExporting] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [menuOpen]);
 
   // L'état vient du localStorage (persist) : on attend le montage client
   // pour éviter un mismatch d'hydratation avec le rendu serveur.
@@ -32,10 +48,16 @@ export default function CVBuilderPage() {
   // Export à la taille choisie par l'utilisateur : pas de réduction
   // automatique. Si le contenu déborde, le .docx fait plusieurs pages
   // (le débordement est visible dans l'aperçu).
-  const handleExport = async () => {
+  const handleExport = async (format: ExportFormat) => {
+    setMenuOpen(false);
     setExporting(true);
     try {
-      await exportToWord(useCVStore.getState().data, templateKey);
+      const currentData = useCVStore.getState().data;
+      if (format === "pdf") {
+        await exportToPdf(currentData);
+      } else {
+        await exportToWord(currentData, templateKey);
+      }
     } finally {
       setExporting(false);
     }
@@ -105,19 +127,60 @@ export default function CVBuilderPage() {
         <span className="hidden md:inline">Réinitialiser</span>
       </Button>
 
-      <Button variant="accent" onClick={handleExport} disabled={exporting}>
-        {exporting ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="hidden sm:inline">Génération…</span>
-          </>
-        ) : (
-          <>
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Télécharger .docx</span>
-          </>
+      <div className="relative" ref={menuRef}>
+        <Button
+          variant="accent"
+          onClick={() => setMenuOpen((v) => !v)}
+          disabled={exporting}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+        >
+          {exporting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="hidden sm:inline">Génération…</span>
+            </>
+          ) : (
+            <>
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Télécharger</span>
+              <ChevronDown className="h-3.5 w-3.5" />
+            </>
+          )}
+        </Button>
+
+        {menuOpen && (
+          <div
+            role="menu"
+            className="glass absolute right-0 top-[calc(100%+0.5rem)] z-30 w-48 overflow-hidden rounded-xl p-1 shadow-lg"
+          >
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => handleExport("pdf")}
+              className={cn(
+                "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-content-primary",
+                "hover:bg-surface-hover"
+              )}
+            >
+              <FileText className="h-4 w-4" />
+              Format PDF (.pdf)
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => handleExport("docx")}
+              className={cn(
+                "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-content-primary",
+                "hover:bg-surface-hover"
+              )}
+            >
+              <FileText className="h-4 w-4" />
+              Format Word (.docx)
+            </button>
+          </div>
         )}
-      </Button>
+      </div>
     </>
   );
 
