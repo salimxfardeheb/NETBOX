@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, Download, FileText, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import { useTopbarSlot } from "@/lib/topbar-slot";
+import { CloudControls } from "./components/CloudControls";
 import { CVPreview } from "./components/CVPreview";
 import { CVForm } from "./components/form/CVForm";
 import { Select } from "./components/form/fields";
@@ -14,6 +16,25 @@ import { useCVStore } from "./lib/store";
 import { templates, type TemplateKey } from "./templates";
 
 type ExportFormat = "docx" | "pdf";
+
+/**
+ * « Créer un CV » (sidebar) pointe sur ?new=1 : on réinitialise
+ * l'éditeur puis on nettoie l'URL. Isolé dans un composant sous
+ * <Suspense> car useSearchParams l'exige au build.
+ */
+function NewCVHandler() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      useCVStore.getState().reset();
+      router.replace("/tools/cv-builder");
+    }
+  }, [searchParams, router]);
+
+  return null;
+}
 
 export default function CVBuilderPage() {
   const data = useCVStore((s) => s.data);
@@ -127,6 +148,9 @@ export default function CVBuilderPage() {
         <span className="hidden md:inline">Réinitialiser</span>
       </Button>
 
+      {/* Connexion + sauvegarde en ligne (Supabase). */}
+      <CloudControls />
+
       <div className="relative" ref={menuRef}>
         <Button
           variant="accent"
@@ -186,6 +210,9 @@ export default function CVBuilderPage() {
 
   return (
     <>
+      <Suspense fallback={null}>
+        <NewCVHandler />
+      </Suspense>
       {topbarSlot && createPortal(actions, topbarSlot)}
 
       {/* Split-screen : formulaire | preview */}

@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ChevronDown } from "lucide-react";
 import { tools } from "@/lib/tools-registry";
 import { cn } from "@/lib/cn";
 
@@ -14,6 +16,8 @@ import { cn } from "@/lib/cn";
  */
 export function Sidebar() {
   const pathname = usePathname();
+  // Sous-menus dépliés manuellement (sinon : déplié si la route est active).
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
   return (
     <aside
@@ -58,6 +62,87 @@ export function Sidebar() {
                 <span className="ml-3 hidden truncate text-sm font-medium md:inline">
                   {tool.label}
                 </span>
+              </div>
+            );
+          }
+
+          // Entrée avec sous-menu : le clic déplie la liste d'options
+          // au lieu de naviguer.
+          if (tool.children) {
+            const isOpen = openMenus[tool.id] ?? isActive;
+            return (
+              <div key={tool.id}>
+                <button
+                  type="button"
+                  aria-expanded={isOpen}
+                  title={tool.label}
+                  onClick={() =>
+                    setOpenMenus((m) => ({ ...m, [tool.id]: !isOpen }))
+                  }
+                  className={cn(
+                    "group flex w-full items-center rounded-xl px-3 py-2.5 transition-all duration-200",
+                    "text-content-secondary hover:text-content-primary",
+                    isActive
+                      ? "glass-active text-content-primary"
+                      : "hover:bg-glass-hover"
+                  )}
+                >
+                  <Icon
+                    className={cn(
+                      "h-5 w-5 shrink-0 transition-colors",
+                      isActive ? "text-accent" : "group-hover:text-content-primary"
+                    )}
+                    aria-hidden="true"
+                  />
+                  <span className="ml-3 hidden flex-1 truncate text-left text-sm font-medium md:inline">
+                    {tool.label}
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      "ml-auto hidden h-4 w-4 shrink-0 transition-transform md:block",
+                      isOpen && "rotate-180"
+                    )}
+                    aria-hidden="true"
+                  />
+                </button>
+
+                {isOpen && (
+                  <div className="mt-1 flex flex-col gap-1">
+                    {tool.children.map((child) => {
+                      const ChildIcon = child.icon;
+                      // Actif sur correspondance exacte du chemin (sans query).
+                      const childActive =
+                        pathname === child.path.split("?")[0];
+                      return (
+                        <Link
+                          key={child.id}
+                          href={child.path}
+                          title={child.label}
+                          aria-current={childActive ? "page" : undefined}
+                          className={cn(
+                            "group flex items-center rounded-lg px-3 py-2 md:ml-6 md:px-2",
+                            "text-sm text-content-secondary transition-all duration-200",
+                            "hover:text-content-primary",
+                            childActive
+                              ? "glass-active text-content-primary"
+                              : "hover:bg-glass-hover"
+                          )}
+                        >
+                          <ChildIcon
+                            className={cn(
+                              "h-4 w-4 shrink-0",
+                              childActive && "text-accent"
+                            )}
+                            aria-hidden="true"
+                          />
+                          <span className="ml-2.5 hidden truncate md:inline">
+                            {child.label}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           }

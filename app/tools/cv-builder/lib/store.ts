@@ -117,7 +117,15 @@ function reorder(list: unknown[], from: number, to: number): void {
 interface CVStore {
   data: CVData;
   templateKey: TemplateKey;
+  /** Id du CV en base (null = jamais enregistré en ligne). */
+  cvId: string | null;
+  /** Titre du CV en base. */
+  cvTitle: string;
 
+  /** Remplace tout le CV (chargement depuis la sauvegarde en ligne). */
+  setData: (data: CVData) => void;
+  /** Associe l'éditeur à un CV en base (ou le détache avec null). */
+  setCvMeta: (id: string | null, title: string) => void;
   setBasics: (patch: Partial<CVBasics>) => void;
   setPhoto: (dataUrl: string | null) => void;
   setTemplate: (key: TemplateKey) => void;
@@ -162,6 +170,31 @@ export const useCVStore = create<CVStore>()(
     immer((set) => ({
       data: createEmptyCV(),
       templateKey: "modele4",
+      cvId: null,
+      cvTitle: "",
+
+      setCvMeta: (id, title) =>
+        set((state) => {
+          state.cvId = id;
+          state.cvTitle = title;
+        }),
+
+      setData: (data) =>
+        set((state) => {
+          // Mêmes garde-fous que `migrate` : un JSON sauvegardé par une
+          // version antérieure du module reste chargeable.
+          data.custom ??= [];
+          data.layout ??= createDefaultLayout();
+          data.basics.personalCustom ??= [];
+          data.fontScale ??= 100;
+          for (const section of data.custom) {
+            section.kind ??= "list";
+            section.items ??= [];
+            section.entries ??= [];
+            section.text ??= "";
+          }
+          state.data = data;
+        }),
 
       setBasics: (patch) =>
         set((state) => {
@@ -295,6 +328,10 @@ export const useCVStore = create<CVStore>()(
       reset: () =>
         set((state) => {
           state.data = createEmptyCV();
+          // Détache l'éditeur du CV en base : un CV réinitialisé ne doit
+          // pas écraser silencieusement un CV enregistré en ligne.
+          state.cvId = null;
+          state.cvTitle = "";
         }),
     })),
     {
@@ -303,6 +340,8 @@ export const useCVStore = create<CVStore>()(
       partialize: (state) => ({
         data: state.data,
         templateKey: state.templateKey,
+        cvId: state.cvId,
+        cvTitle: state.cvTitle,
       }),
       // v1 n'avait ni custom, ni layout, ni summaryJustify.
       // v2 n'avait ni kind sur les blocs custom, ni fontScale/photoSize.

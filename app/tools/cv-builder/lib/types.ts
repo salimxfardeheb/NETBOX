@@ -13,6 +13,13 @@ export interface CVBasics {
   summaryJustify?: boolean;
   /** Photo encodée en data URL (base64). */
   photo?: string;
+  /**
+   * Chemin du fichier photo dans le bucket Supabase ("uid/photo.jpg").
+   * Présent uniquement dans le JSON sauvegardé en ligne : au chargement,
+   * la photo est retéléchargée et réinjectée en base64 dans `photo`,
+   * si bien que le preview et l'export .docx n'y touchent jamais.
+   */
+  photoPath?: string;
   /** Taille de la photo en % (100 = taille du modèle). */
   photoSize?: number;
   email?: string;
