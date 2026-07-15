@@ -3,6 +3,7 @@ import {
   FileText,
   LayoutDashboard,
   List,
+  ReceiptText,
   type LucideIcon,
 } from "lucide-react";
 
@@ -74,6 +75,13 @@ export const tools: Tool[] = [
         path: "/tools/cv-builder/cvs",
       },
     ],
+  },
+  {
+    id: "factures",
+    label: "Factures",
+    icon: ReceiptText,
+    path: "/tools/factures",
+    enabled: true,
   },
   // Les futurs outils seront ajoutés ici (un objet = un outil).
 ];
