@@ -3,31 +3,37 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FilePlus2, FileText, Loader2, Trash2 } from "lucide-react";
+import { FilePlus2, Loader2, ReceiptText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useCVStore } from "../lib/store";
-import { deleteCV, listCVs, loadCV, type CVListRow } from "../lib/cloud";
+import {
+  deleteFacture,
+  listFactures,
+  loadFacture,
+  type FactureListRow,
+} from "../lib/cloud";
+import { useFactureStore } from "../lib/store";
 
 /**
- * Liste des CVs de la base partagée : tout compte connecté voit
- * l'ensemble des CVs et peut les ouvrir dans l'éditeur ou les supprimer.
+ * Liste des documents enregistrés (base partagée, JSON en jsonb) :
+ * tout compte connecté voit l'ensemble des documents et peut les
+ * ouvrir dans l'éditeur ou les supprimer.
  */
-export default function CVListPage() {
+export default function FacturesListPage() {
   const router = useRouter();
-  const setData = useCVStore((s) => s.setData);
-  const setCvMeta = useCVStore((s) => s.setCvMeta);
+  const applySnapshot = useFactureStore((s) => s.applySnapshot);
+  const setDocMeta = useFactureStore((s) => s.setDocMeta);
 
   // Session globale (AuthProvider) : undefined = chargement.
   const { supabase, session } = useAuth();
-  const [rows, setRows] = useState<CVListRow[] | null>(null);
+  const [rows, setRows] = useState<FactureListRow[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!supabase) return;
     try {
-      setRows(await listCVs(supabase));
+      setRows(await listFactures(supabase));
     } catch (err) {
       setError(`Chargement de la liste : ${(err as Error).message}`);
     }
@@ -37,11 +43,11 @@ export default function CVListPage() {
     if (session) void refresh();
   }, [session, refresh]);
 
-  const handleOpen = async (row: CVListRow) => {
+  const handleOpen = async (row: FactureListRow) => {
     if (!supabase) return;
     if (
       !window.confirm(
-        `Ouvrir « ${row.title} » ? Le CV actuellement dans l'éditeur sera remplacé.`
+        `Ouvrir « ${row.title} » ? Le document actuellement dans l'éditeur sera remplacé.`
       )
     ) {
       return;
@@ -49,27 +55,26 @@ export default function CVListPage() {
     setBusyId(row.id);
     setError(null);
     try {
-      const { title, data } = await loadCV(supabase, row.id);
-      setData(data);
-      setCvMeta(row.id, title);
-      router.push("/tools/cv-builder");
+      const { title, snapshot } = await loadFacture(supabase, row.id);
+      applySnapshot(snapshot, row.id, title);
+      router.push("/tools/factures");
     } catch (err) {
       setError(`Ouverture impossible : ${(err as Error).message}`);
       setBusyId(null);
     }
   };
 
-  const handleDelete = async (row: CVListRow) => {
+  const handleDelete = async (row: FactureListRow) => {
     if (!supabase) return;
     if (!window.confirm(`Supprimer définitivement « ${row.title} » ?`)) return;
     setBusyId(row.id);
     setError(null);
     try {
-      await deleteCV(supabase, row.id);
-      // Si le CV supprimé était ouvert dans l'éditeur, on le détache
-      // pour qu'une future sauvegarde recrée une ligne proprement.
-      if (useCVStore.getState().cvId === row.id) {
-        setCvMeta(null, useCVStore.getState().cvTitle);
+      await deleteFacture(supabase, row.id);
+      // Si le document supprimé était ouvert dans l'éditeur, on le
+      // détache pour qu'une future sauvegarde recrée une ligne proprement.
+      if (useFactureStore.getState().docId === row.id) {
+        setDocMeta(null, useFactureStore.getState().docTitle);
       }
       await refresh();
     } catch (err) {
@@ -92,12 +97,12 @@ export default function CVListPage() {
     <div className="mx-auto max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-content-primary">
-          Liste des CVs
+          Liste des documents
         </h1>
-        <Link href="/tools/cv-builder?new=1">
+        <Link href="/tools/factures?new=1">
           <Button variant="accent" size="sm">
             <FilePlus2 className="h-4 w-4" />
-            Créer un CV
+            Nouveau document
           </Button>
         </Link>
       </div>
@@ -112,8 +117,8 @@ export default function CVListPage() {
         </div>
       ) : session === null ? (
         <p className="glass rounded-glass p-6 text-sm text-content-secondary">
-          Connectez-vous pour voir les CVs, via le bouton « Connexion » en
-          haut à droite.
+          Connectez-vous pour voir les documents, via le bouton
+          « Connexion » en haut à droite.
         </p>
       ) : rows === null ? (
         <div className="glass flex h-32 items-center justify-center rounded-glass">
@@ -121,7 +126,7 @@ export default function CVListPage() {
         </div>
       ) : rows.length === 0 ? (
         <p className="glass rounded-glass p-6 text-sm text-content-secondary">
-          Aucun CV enregistré pour l&apos;instant. Créez-en un puis
+          Aucun document enregistré pour l&apos;instant. Rédigez-en un puis
           enregistrez-le via le bouton nuage de l&apos;éditeur.
         </p>
       ) : (
@@ -131,7 +136,7 @@ export default function CVListPage() {
               key={row.id}
               className="glass flex items-center gap-3 rounded-glass p-4"
             >
-              <FileText className="h-5 w-5 shrink-0 text-accent" />
+              <ReceiptText className="h-5 w-5 shrink-0 text-accent" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-content-primary">
                   {row.title}

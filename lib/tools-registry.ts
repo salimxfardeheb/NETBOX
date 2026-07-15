@@ -82,6 +82,21 @@ export const tools: Tool[] = [
     icon: ReceiptText,
     path: "/tools/factures",
     enabled: true,
+    children: [
+      {
+        id: "factures-new",
+        label: "Nouveau document",
+        icon: FilePlus2,
+        // ?new=1 : l'éditeur repart d'un document vierge (géré dans page.tsx).
+        path: "/tools/factures?new=1",
+      },
+      {
+        id: "factures-liste",
+        label: "Liste des documents",
+        icon: List,
+        path: "/tools/factures/liste",
+      },
+    ],
   },
   // Les futurs outils seront ajoutés ici (un objet = un outil).
 ];

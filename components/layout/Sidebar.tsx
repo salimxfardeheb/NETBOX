@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { tools } from "@/lib/tools-registry";
@@ -28,12 +29,16 @@ export function Sidebar() {
       )}
     >
       {/* Logo / wordmark */}
-      <div className="flex h-12 items-center px-2">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/20 text-accent">
-          <span className="text-lg font-bold">S</span>
-        </div>
+      <div className="flex h-14 items-center px-2">
+        <Image
+          src="/netbox-logo.png"
+          alt="NETBOX"
+          width={48}
+          height={48}
+          className="h-12 w-12 shrink-0 object-contain"
+        />
         <span className="ml-3 hidden text-base font-semibold tracking-tight text-content-primary md:inline">
-          SIMOUX
+          NETBOX
         </span>
       </div>
 

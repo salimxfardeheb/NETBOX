@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { AuthMenu } from "@/components/auth/AuthMenu";
 import { getActiveTool } from "@/lib/tools-registry";
 import { useTopbarSlot } from "@/lib/topbar-slot";
 
@@ -18,7 +19,7 @@ export function Topbar() {
   return (
     <header className="glass sticky top-3 z-10 flex h-14 items-center justify-between gap-3 rounded-glass px-5">
       <h1 className="shrink-0 text-sm font-semibold text-content-primary">
-        {activeTool?.label ?? "SIMOUX"}
+        {activeTool?.label ?? "NETBOX"}
       </h1>
 
       {/* Slot d'actions rempli par la page active (portail). */}
@@ -27,6 +28,9 @@ export function Topbar() {
         className="flex min-w-0 flex-1 items-center justify-end gap-3"
         aria-label="Actions"
       />
+
+      {/* Connexion globale — visible sur toutes les pages. */}
+      <AuthMenu />
     </header>
   );
 }

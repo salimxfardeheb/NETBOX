@@ -69,6 +69,16 @@ body {
     box-shadow: var(--glass-shadow);
   }
 
+  /* Surface de popover / dropdown — quasi opaque pour que le contenu
+     situé derrière ne transparaisse pas. */
+  .glass-solid {
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
   /* Interactive glass — brightens on hover, used by nav items / buttons. */
   .glass-interactive {
     transition: all 200ms ease;

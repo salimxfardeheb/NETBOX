@@ -163,6 +163,12 @@ describe("computeTotals", () => {
     expect(totals.totalAPayer).toBe(14_102);
   });
 
+  it("permet de désactiver le timbre (facultatif) même en espèces", () => {
+    const totals = computeTotals(items, "ESPECES", 0, { appliquerTimbre: false });
+    expect(totals.droitTimbre).toBe(0);
+    expect(totals.totalAPayer).toBe(totals.totalTTC);
+  });
+
   it("déduit l'acompte pour obtenir le reste à payer", () => {
     const totals = computeTotals(items, "ESPECES", 5_000);
     expect(totals.acompte).toBe(5_000);
@@ -172,6 +178,21 @@ describe("computeTotals", () => {
   it("borne le reste à payer à 0 et ignore un acompte négatif", () => {
     expect(computeTotals(items, "VIREMENT", 999_999).resteAPayer).toBe(0);
     expect(computeTotals(items, "VIREMENT", -50).acompte).toBe(0);
+  });
+
+  it("applique une TVA globale sur le total HT au lieu des lignes", () => {
+    // Lignes calculées SANS TVA (taux 0) : c'est le mode « TVA sur le total ».
+    const horsTVA = [
+      computeItem(baseItem({ taux: 0 })), // 10 000 HT
+      computeItem(baseItem({ taux: 0, prixUnitaireHT: 500, quantite: 4 })), // 2 000 HT
+    ];
+    const totals = computeTotals(horsTVA, "VIREMENT", 0, { tvaGlobale: 19 });
+    expect(totals.totalHT).toBe(12_000);
+    expect(totals.totalTVA).toBe(2_280);
+    expect(totals.tvaParTaux).toEqual([
+      { taux: 19, base: 12_000, montant: 2_280 },
+    ]);
+    expect(totals.totalTTC).toBe(14_280);
   });
 
   it("retourne des totaux nuls sans lignes (et sans timbre)", () => {

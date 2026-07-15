@@ -15,7 +15,7 @@ export default function HomePage() {
         </div>
 
         <h2 className="text-xl font-semibold text-content-primary">
-          Bienvenue sur SIMOUX
+          Bienvenue sur NETBOX
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-content-secondary">
           Votre espace de travail est prêt. Sélectionnez un outil dans le menu

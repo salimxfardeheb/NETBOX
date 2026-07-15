@@ -118,6 +118,19 @@ export function DocumentSection() {
                 maxLength={3}
               />
             </Field>
+
+            {/* Timbre facultatif — seul le paiement en espèces y est soumis. */}
+            {s.modePaiement === "ESPECES" && (
+              <label className="col-span-2 flex items-center gap-2 pb-1 text-sm text-content-secondary sm:col-span-3">
+                <input
+                  type="checkbox"
+                  checked={s.appliquerTimbre}
+                  onChange={(e) => s.patch({ appliquerTimbre: e.target.checked })}
+                  className="h-4 w-4 accent-[var(--accent)]"
+                />
+                Appliquer le droit de timbre (facultatif)
+              </label>
+            )}
           </>
         )}
 
@@ -136,7 +149,7 @@ export function DocumentSection() {
 
       {s.type === "PROFORMA" && (
         <p className="mt-3 text-xs text-content-secondary">
-          La mention « Facture proforma — sans valeur fiscale » sera affichée
+          La mention « Facture proforma » sera affichée
           sur le document.
         </p>
       )}

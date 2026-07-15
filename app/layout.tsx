@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import { Background } from "@/components/layout/Background";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 
 export const metadata: Metadata = {
-  title: "SIMOUX",
+  title: "NETBOX",
   description: "Tableau de bord modulaire — shell glassmorphism.",
 };
 
@@ -22,15 +23,18 @@ export default function RootLayout({
         {/* Fixed blurred orbs behind everything. */}
         <Background />
 
-        {/* Fixed glass navigation rail. */}
-        <Sidebar />
+        {/* Session Supabase partagée par toute la plateforme. */}
+        <AuthProvider>
+          {/* Fixed glass navigation rail. */}
+          <Sidebar />
 
-        {/* Content area — offset to clear the fixed sidebar.
-            Widths: 5.5rem on mobile (icon rail), 16.5rem from md (full rail). */}
-        <div className="min-h-screen py-3 pl-[5.5rem] pr-3 md:pl-[16.5rem]">
-          <Topbar />
-          <main className="mt-3">{children}</main>
-        </div>
+          {/* Content area — offset to clear the fixed sidebar.
+              Widths: 5.5rem on mobile (icon rail), 16.5rem from md (full rail). */}
+          <div className="min-h-screen py-3 pl-[5.5rem] pr-3 md:pl-[16.5rem]">
+            <Topbar />
+            <main className="mt-3">{children}</main>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

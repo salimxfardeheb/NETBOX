@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import type { InvoiceTotals } from "@/lib/invoicing/calculations";
 import type { Invoice } from "@/lib/invoicing/types";
 import { InvoicePreview } from "../components/InvoicePreview";
+import type { ColonnesVisibles } from "./store";
 
 /** Nom de fichier dérivé du type + numéro d'aperçu. */
 function fileBaseName(invoice: Invoice): string {
@@ -22,7 +23,8 @@ function fileBaseName(invoice: Invoice): string {
 async function renderInvoicePdf(
   invoice: Invoice,
   totals: InvoiceTotals,
-  afficherPrix: boolean
+  afficherPrix: boolean,
+  colonnes: ColonnesVisibles
 ) {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
     import("html2canvas"),
@@ -42,7 +44,7 @@ async function renderInvoicePdf(
     // sur un onglet en arrière-plan).
     flushSync(() => {
       root.render(
-        createElement(InvoicePreview, { invoice, totals, afficherPrix })
+        createElement(InvoicePreview, { invoice, totals, afficherPrix, colonnes })
       );
     });
 
@@ -114,9 +116,10 @@ async function renderInvoicePdf(
 export async function exportInvoicePdf(
   invoice: Invoice,
   totals: InvoiceTotals,
-  afficherPrix: boolean
+  afficherPrix: boolean,
+  colonnes: ColonnesVisibles
 ): Promise<void> {
-  const pdf = await renderInvoicePdf(invoice, totals, afficherPrix);
+  const pdf = await renderInvoicePdf(invoice, totals, afficherPrix, colonnes);
   pdf.save(`${fileBaseName(invoice)}.pdf`);
 }
 
@@ -127,9 +130,10 @@ export async function exportInvoicePdf(
 export async function printInvoice(
   invoice: Invoice,
   totals: InvoiceTotals,
-  afficherPrix: boolean
+  afficherPrix: boolean,
+  colonnes: ColonnesVisibles
 ): Promise<void> {
-  const pdf = await renderInvoicePdf(invoice, totals, afficherPrix);
+  const pdf = await renderInvoicePdf(invoice, totals, afficherPrix, colonnes);
   pdf.autoPrint();
   window.open(pdf.output("bloburl"), "_blank");
 }

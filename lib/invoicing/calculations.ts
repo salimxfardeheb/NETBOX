@@ -107,17 +107,39 @@ export interface InvoiceTotals {
   resteAPayer: number;
 }
 
+/** Options de calcul des totaux. */
+export interface ComputeTotalsOptions {
+  /**
+   * Le timbre est FACULTATIF : il n'est calculé que si `appliquerTimbre`
+   * est vrai ET que le mode de paiement y est soumis (espèces).
+   * `true` par défaut (comportement légal standard) — l'UI passe son toggle.
+   */
+  appliquerTimbre?: boolean;
+  stampConfig?: StampDutyConfig;
+  /**
+   * TVA GLOBALE : taux unique (en %) appliqué au total HT du document.
+   * Quand défini, la TVA des lignes est ignorée — la TVA est calculée en
+   * une fois sur le total. Non défini = somme des TVA par ligne.
+   */
+  tvaGlobale?: number;
+}
+
 /**
  * Totaux du document à partir des lignes calculées.
- * Le droit de timbre n'est appliqué que si le mode de paiement y est soumis
- * (espèces) ; virement, chèque et carte en sont exonérés.
+ * Le droit de timbre n'est jamais dû hors espèces (virement, chèque et
+ * carte exonérés) et peut être désactivé via `options.appliquerTimbre`.
  */
 export function computeTotals(
   items: InvoiceItem[],
   modePaiement: ModePaiement,
   acompte = 0,
-  stampConfig: StampDutyConfig = STAMP_DUTY_CONFIG
+  options: ComputeTotalsOptions = {}
 ): InvoiceTotals {
+  const {
+    appliquerTimbre = true,
+    stampConfig = STAMP_DUTY_CONFIG,
+    tvaGlobale,
+  } = options;
   const totalBrutHT = round2(
     items.reduce((sum, it) => sum + it.montantHT + it.montantRemise, 0)
   );
@@ -126,28 +148,39 @@ export function computeTotals(
   );
   const totalHT = round2(items.reduce((sum, it) => sum + it.montantHT, 0));
 
-  const parTaux = new Map<number, { base: number; montant: number }>();
-  for (const it of items) {
-    const entry = parTaux.get(it.taux) ?? { base: 0, montant: 0 };
-    entry.base += it.montantHT;
-    entry.montant += it.montantTVA;
-    parTaux.set(it.taux, entry);
+  let tvaParTaux: TvaBreakdownEntry[];
+  let totalTVA: number;
+  if (tvaGlobale !== undefined) {
+    // TVA globale : un seul taux appliqué au total HT du document.
+    totalTVA = round2(totalHT * (tvaGlobale / 100));
+    tvaParTaux =
+      totalHT !== 0
+        ? [{ taux: tvaGlobale, base: totalHT, montant: totalTVA }]
+        : [];
+  } else {
+    const parTaux = new Map<number, { base: number; montant: number }>();
+    for (const it of items) {
+      const entry = parTaux.get(it.taux) ?? { base: 0, montant: 0 };
+      entry.base += it.montantHT;
+      entry.montant += it.montantTVA;
+      parTaux.set(it.taux, entry);
+    }
+    tvaParTaux = [...parTaux.entries()]
+      .filter(([, v]) => v.base !== 0)
+      .map(([taux, v]) => ({
+        taux,
+        base: round2(v.base),
+        montant: round2(v.montant),
+      }))
+      .sort((a, b) => a.taux - b.taux);
+    totalTVA = round2(items.reduce((sum, it) => sum + it.montantTVA, 0));
   }
-  const tvaParTaux: TvaBreakdownEntry[] = [...parTaux.entries()]
-    .filter(([, v]) => v.base !== 0)
-    .map(([taux, v]) => ({
-      taux,
-      base: round2(v.base),
-      montant: round2(v.montant),
-    }))
-    .sort((a, b) => a.taux - b.taux);
-
-  const totalTVA = round2(items.reduce((sum, it) => sum + it.montantTVA, 0));
   const totalTTC = round2(totalHT + totalTVA);
 
-  const droitTimbre = isStampDutyApplicable(modePaiement)
-    ? computeStampDuty(totalTTC, stampConfig)
-    : 0;
+  const droitTimbre =
+    appliquerTimbre && isStampDutyApplicable(modePaiement)
+      ? computeStampDuty(totalTTC, stampConfig)
+      : 0;
   const totalAPayer = round2(totalTTC + droitTimbre);
   const acompteApplique = round2(Math.max(acompte, 0));
 

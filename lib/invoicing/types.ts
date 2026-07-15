@@ -19,6 +19,13 @@ export type StatutPaiement = "PAYEE" | "NON_PAYEE" | "PARTIELLEMENT_PAYEE";
 /** Nature de la remise appliquée à une ligne. */
 export type RemiseType = "POURCENT" | "MONTANT";
 
+/**
+ * Mode de calcul de la TVA :
+ * PAR_LIGNE — chaque produit a son taux, la TVA est sommée ligne à ligne ;
+ * GLOBALE — un taux unique appliqué au total HT du document.
+ */
+export type TvaMode = "PAR_LIGNE" | "GLOBALE";
+
 /** Vendeur — mentions fiscales obligatoires en Algérie (NIF/NIS/RC/AI). */
 export interface Company {
   raisonSociale: string;
@@ -78,7 +85,7 @@ export interface InvoiceItem extends InvoiceItemInput {
 export interface Invoice {
   type: DocumentType;
   /**
-   * Numéro d'aperçu PROVISOIRE, sans valeur fiscale — l'attribution
+   * Numéro d'aperçu PROVISOIRE — l'attribution
    * définitive (séquence persistée, unicité) est l'étape 2.
    * Format facture : AAAA-NNNN.
    */
@@ -98,4 +105,13 @@ export interface Invoice {
   notes?: string;
   /** Acompte déjà versé, saisi manuellement en étape 1. */
   acompte: number;
+  /**
+   * Droit de timbre FACULTATIF : appliqué seulement si vrai ET paiement en
+   * espèces (les autres modes en sont exonérés dans tous les cas).
+   */
+  appliquerTimbre: boolean;
+  /** Mode de calcul de la TVA (par produit ou sur le total). */
+  modeTVA: TvaMode;
+  /** Taux unique (en %) appliqué au total HT quand modeTVA = GLOBALE. */
+  tauxTVAGlobal?: number;
 }

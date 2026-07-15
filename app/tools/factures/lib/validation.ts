@@ -1,61 +1,48 @@
 import type { Invoice } from "@/lib/invoicing/types";
 
 /**
- * Validation légère avant rendu / export : uniquement la présence des
- * champs obligatoires. Ni unicité de numéro ni attribution définitive —
- * c'est l'étape 2 (persistance).
+ * Rappels NON bloquants : tous les champs sont facultatifs, l'utilisateur
+ * garde la liberté d'imprimer / exporter un document incomplet. Cette liste
+ * signale simplement les mentions habituellement attendues (notamment les
+ * mentions fiscales d'une facture) à titre informatif.
  */
-export function validateInvoice(invoice: Invoice): string[] {
-  const errors: string[] = [];
+export function invoiceWarnings(invoice: Invoice): string[] {
+  const warnings: string[] = [];
   const { company, customer, items, type } = invoice;
 
   if (!company.raisonSociale.trim()) {
-    errors.push("Vendeur : la raison sociale est obligatoire.");
-  }
-  if (!company.adresse.trim()) {
-    errors.push("Vendeur : l'adresse est obligatoire.");
+    warnings.push("Vendeur : raison sociale non renseignée.");
   }
 
-  // Mentions fiscales obligatoires sur les documents à valeur commerciale.
+  // Mentions fiscales attendues sur une facture définitive.
   if (type === "FACTURE") {
-    if (!company.nif.trim()) errors.push("Vendeur : le NIF est obligatoire sur une facture.");
-    if (!company.nis.trim()) errors.push("Vendeur : le NIS est obligatoire sur une facture.");
-    if (!company.rc.trim()) errors.push("Vendeur : le RC est obligatoire sur une facture.");
-    if (!company.articleImposition.trim()) {
-      errors.push("Vendeur : l'article d'imposition (AI) est obligatoire sur une facture.");
+    const fiscales: [string, string][] = [
+      [company.nif, "NIF"],
+      [company.nis, "NIS"],
+      [company.rc, "RC"],
+      [company.articleImposition, "article d'imposition (AI)"],
+    ];
+    for (const [valeur, label] of fiscales) {
+      if (!valeur.trim()) {
+        warnings.push(`Vendeur : ${label} non renseigné (mention fiscale usuelle sur une facture).`);
+      }
     }
-    if (!/^\d{4}-\d{4}$/.test(invoice.numeroApercu)) {
-      errors.push("Le numéro d'aperçu d'une facture doit suivre le format AAAA-NNNN (ex. 2026-0001).");
+    if (invoice.numeroApercu.trim() && !/^\d{4}-\d{4}$/.test(invoice.numeroApercu)) {
+      warnings.push("Numéro d'aperçu : format habituel AAAA-NNNN (ex. 2026-0001).");
     }
   }
 
   if (!customer.raisonSociale.trim()) {
-    errors.push("Client : la raison sociale (ou le nom) est obligatoire.");
-  }
-  if (!customer.adresse.trim()) {
-    errors.push("Client : l'adresse est obligatoire.");
+    warnings.push("Client : nom / raison sociale non renseigné.");
   }
 
-  if (!invoice.numeroApercu.trim()) errors.push("Le numéro de document est obligatoire.");
-  if (!invoice.dateEmission) errors.push("La date d'émission est obligatoire.");
   if (type === "DEVIS" && !invoice.dateValidite) {
-    errors.push("Devis : la date de validité est obligatoire.");
+    warnings.push("Devis : date de validité non renseignée.");
   }
 
   if (items.length === 0) {
-    errors.push("Ajoutez au moins une ligne au document.");
+    warnings.push("Le document ne contient aucune ligne.");
   }
-  items.forEach((item, i) => {
-    if (!item.designation.trim()) {
-      errors.push(`Ligne ${i + 1} : la désignation est obligatoire.`);
-    }
-    if (item.quantite <= 0) {
-      errors.push(`Ligne ${i + 1} : la quantité doit être supérieure à 0.`);
-    }
-    if (item.prixUnitaireHT < 0) {
-      errors.push(`Ligne ${i + 1} : le prix unitaire ne peut pas être négatif.`);
-    }
-  });
 
-  return errors;
+  return warnings;
 }

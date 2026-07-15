@@ -1,4 +1,4 @@
-# SIMOUX
+# NETBOX
 
 Shell de tableau de bord modulaire, design **Apple glassmorphism**.
 Squelette extensible prêt à accueillir des modules d'outils — sans aucune

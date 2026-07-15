@@ -10,6 +10,7 @@ import type { InvoiceTotals } from "@/lib/invoicing/calculations";
 import { montantEnLettres } from "@/lib/invoicing/montant-en-lettres";
 import type { Invoice } from "@/lib/invoicing/types";
 import { formatDate, formatMoney } from "../lib/format";
+import type { ColonnesVisibles } from "../lib/store";
 
 /*
  * Feuille A4 en points (1 px = 1 pt), même convention que le module CV :
@@ -45,11 +46,14 @@ export function InvoicePreview({
   invoice,
   totals,
   afficherPrix = true,
+  colonnes = { reference: true, unite: true, remise: true },
 }: {
   invoice: Invoice;
   totals: InvoiceTotals;
   /** Bon de livraison : permet de masquer les prix (BL sans valorisation). */
   afficherPrix?: boolean;
+  /** Colonnes optionnelles du tableau — les décochées n'apparaissent pas. */
+  colonnes?: ColonnesVisibles;
 }) {
   // Mise à l'échelle : la feuille (595 pt) est rendue telle quelle puis
   // réduite/agrandie pour remplir la colonne d'aperçu.
@@ -103,7 +107,7 @@ export function InvoicePreview({
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="text-[15px] font-bold uppercase">
-                {company.raisonSociale || "Raison sociale du vendeur"}
+                {company.raisonSociale}
               </div>
               <div className="whitespace-pre-line">{company.adresse}</div>
               <div>
@@ -158,53 +162,60 @@ export function InvoicePreview({
             )}
           </div>
 
-          {/* ---- Bandeau proforma (sans valeur fiscale) ---- */}
+          {/* ---- Bandeau proforma ---- */}
           {type === "PROFORMA" && (
             <div className="mt-3 border border-neutral-400 bg-neutral-100 px-3 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wide">
-              Facture proforma — sans valeur fiscale
+              Facture proforma
             </div>
           )}
 
-          {/* ---- Client ---- */}
-          <div className="mt-4 flex justify-end">
-            <div className="w-[46%] rounded border border-neutral-300 px-3 py-2">
-              <div className="text-[8px] font-semibold uppercase tracking-wider text-neutral-500">
-                {estBL ? "Livré à" : "Client"}
-              </div>
-              <div className="font-bold">
-                {customer.raisonSociale || "Nom / raison sociale du client"}
-              </div>
-              <div className="whitespace-pre-line">{customer.adresse}</div>
-              {customer.nif && (
-                <div>
-                  <span className="font-semibold">NIF&nbsp;:</span> {customer.nif}
+          {/* ---- Client — affiché seulement s'il y a quelque chose à écrire ---- */}
+          {(customer.raisonSociale.trim() ||
+            customer.adresse.trim() ||
+            customer.nif?.trim() ||
+            customer.telephone?.trim()) && (
+            <div className="mt-4 flex justify-end">
+              <div className="w-[46%] rounded border border-neutral-300 px-3 py-2">
+                <div className="text-[8px] font-semibold uppercase tracking-wider text-neutral-500">
+                  {estBL ? "Livré à" : "Client"}
                 </div>
-              )}
-              {customer.telephone && <div>Tél : {customer.telephone}</div>}
+                <div className="font-bold">{customer.raisonSociale}</div>
+                <div className="whitespace-pre-line">{customer.adresse}</div>
+                {customer.nif && (
+                  <div>
+                    <span className="font-semibold">NIF&nbsp;:</span> {customer.nif}
+                  </div>
+                )}
+                {customer.telephone && <div>Tél : {customer.telephone}</div>}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* ---- Lignes ---- */}
           <table className="mt-4 w-full border-collapse text-[9px]">
             <thead>
               <tr className="bg-neutral-800 text-white">
-                <th className="border border-neutral-400 px-1.5 py-1 text-left">Réf.</th>
+                {colonnes.reference && (
+                  <th className="border border-neutral-400 px-1.5 py-1 text-left">Réf.</th>
+                )}
                 <th className="border border-neutral-400 px-1.5 py-1 text-left">
                   Désignation
                 </th>
                 <th className="border border-neutral-400 px-1.5 py-1 text-right">Qté</th>
-                <th className="border border-neutral-400 px-1.5 py-1 text-left">Unité</th>
+                {colonnes.unite && (
+                  <th className="border border-neutral-400 px-1.5 py-1 text-left">Unité</th>
+                )}
                 {avecPrix && (
                   <>
                     <th className="border border-neutral-400 px-1.5 py-1 text-right">
                       PU HT
                     </th>
-                    <th className="border border-neutral-400 px-1.5 py-1 text-right">
-                      Remise
-                    </th>
-                    <th className="border border-neutral-400 px-1.5 py-1 text-right">
-                      TVA
-                    </th>
+                    {colonnes.remise && (
+                      <th className="border border-neutral-400 px-1.5 py-1 text-right">
+                        Remise
+                      </th>
+                    )}
+                    {/* Pas de colonne TVA : la TVA est une ligne des totaux. */}
                     <th className="border border-neutral-400 px-1.5 py-1 text-right">
                       Montant HT
                     </th>
@@ -215,29 +226,34 @@ export function InvoicePreview({
             <tbody>
               {invoice.items.map((item, i) => (
                 <tr key={i} className={i % 2 ? "bg-neutral-50" : undefined}>
+                  {colonnes.reference && (
+                    <td className="border border-neutral-300 px-1.5 py-1">
+                      {item.reference}
+                    </td>
+                  )}
                   <td className="border border-neutral-300 px-1.5 py-1">
-                    {item.reference}
-                  </td>
-                  <td className="border border-neutral-300 px-1.5 py-1">
-                    {item.designation || <span className="text-neutral-400">—</span>}
+                    {item.designation}
                   </td>
                   <td className="border border-neutral-300 px-1.5 py-1 text-right tabular-nums">
                     {item.quantite}
                   </td>
-                  <td className="border border-neutral-300 px-1.5 py-1">{item.unite}</td>
+                  {colonnes.unite && (
+                    <td className="border border-neutral-300 px-1.5 py-1">
+                      {item.unite}
+                    </td>
+                  )}
                   {avecPrix && (
                     <>
                       <td className="border border-neutral-300 px-1.5 py-1 text-right tabular-nums">
                         {formatMoney(item.prixUnitaireHT, devise)}
                       </td>
-                      <td className="border border-neutral-300 px-1.5 py-1 text-right tabular-nums">
-                        {item.montantRemise > 0
-                          ? formatMoney(item.montantRemise, devise)
-                          : "—"}
-                      </td>
-                      <td className="border border-neutral-300 px-1.5 py-1 text-right tabular-nums">
-                        {item.taux}&nbsp;%
-                      </td>
+                      {colonnes.remise && (
+                        <td className="border border-neutral-300 px-1.5 py-1 text-right tabular-nums">
+                          {item.montantRemise > 0
+                            ? formatMoney(item.montantRemise, devise)
+                            : ""}
+                        </td>
+                      )}
                       <td className="border border-neutral-300 px-1.5 py-1 text-right tabular-nums">
                         {formatMoney(item.montantHT, devise)}
                       </td>
@@ -248,43 +264,10 @@ export function InvoicePreview({
             </tbody>
           </table>
 
-          {/* ---- Totaux ---- */}
+          {/* ---- Totaux (la TVA est une simple ligne, pas de tableau dédié) ---- */}
           {avecPrix && (
             <div className="mt-4 flex items-start justify-between gap-4">
-              {/* Ventilation TVA par taux. */}
               <div className="w-[46%]">
-                {totals.tvaParTaux.length > 0 && company.assujettiTVA && (
-                  <table className="w-full border-collapse text-[8.5px]">
-                    <thead>
-                      <tr className="bg-neutral-100">
-                        <th className="border border-neutral-300 px-1.5 py-0.5 text-left">
-                          Taux TVA
-                        </th>
-                        <th className="border border-neutral-300 px-1.5 py-0.5 text-right">
-                          Base HT
-                        </th>
-                        <th className="border border-neutral-300 px-1.5 py-0.5 text-right">
-                          Montant TVA
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {totals.tvaParTaux.map((entry) => (
-                        <tr key={entry.taux}>
-                          <td className="border border-neutral-300 px-1.5 py-0.5">
-                            {entry.taux}&nbsp;%
-                          </td>
-                          <td className="border border-neutral-300 px-1.5 py-0.5 text-right tabular-nums">
-                            {formatMoney(entry.base, devise)}
-                          </td>
-                          <td className="border border-neutral-300 px-1.5 py-0.5 text-right tabular-nums">
-                            {formatMoney(entry.montant, devise)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
                 {!company.assujettiTVA && (
                   <div className="mt-1 text-[9px] font-semibold italic">
                     TVA non applicable
@@ -304,7 +287,11 @@ export function InvoicePreview({
                   )}
                   {company.assujettiTVA && (
                     <TotalRow
-                      label="Total TVA"
+                      label={
+                        totals.tvaParTaux.length === 1
+                          ? `TVA (${totals.tvaParTaux[0].taux} %)`
+                          : "Total TVA"
+                      }
                       value={formatMoney(totals.totalTVA, devise)}
                     />
                   )}

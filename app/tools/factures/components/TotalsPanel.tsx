@@ -38,7 +38,8 @@ export function TotalsPanel() {
   const state = useFactureStore();
   const totals = buildTotals(state);
   const { devise } = state;
-  const timbrePossible = isStampDutyApplicable(state.modePaiement);
+  const timbreApplique =
+    state.appliquerTimbre && isStampDutyApplicable(state.modePaiement);
 
   return (
     <Card>
@@ -55,17 +56,16 @@ export function TotalsPanel() {
             muted
           />
         )}
-        {totals.tvaParTaux.map((entry) => (
-          <Row
-            key={entry.taux}
-            label={`TVA ${entry.taux} % (base ${formatMoney(entry.base, devise)})`}
-            value={formatMoney(entry.montant, devise)}
-            muted
-          />
-        ))}
-        <Row label="Total TVA" value={formatMoney(totals.totalTVA, devise)} />
+        <Row
+          label={
+            totals.tvaParTaux.length === 1
+              ? `TVA (${totals.tvaParTaux[0].taux} %)`
+              : "Total TVA"
+          }
+          value={formatMoney(totals.totalTVA, devise)}
+        />
         <Row label="Total TTC" value={formatMoney(totals.totalTTC, devise)} />
-        {timbrePossible && (
+        {timbreApplique && (
           <Row
             label="Droit de timbre (paiement en espèces)"
             value={formatMoney(totals.droitTimbre, devise)}

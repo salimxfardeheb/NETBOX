@@ -5,12 +5,13 @@ import Link from "next/link";
 import { Cloud, CloudUpload, List, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
+import { DOCUMENT_TYPE_LABELS } from "@/lib/invoicing/config";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useCVStore } from "../lib/store";
-import { saveCV } from "../lib/cloud";
+import { saveFacture } from "../lib/cloud";
+import { snapshotFromState, useFactureStore } from "../lib/store";
 
 /**
- * Enregistrer/Charger le CV en ligne (Supabase).
+ * Enregistrer le document en ligne (Supabase, JSON uniquement).
  * La connexion est globale (bouton « Connexion » de la Topbar,
  * via AuthProvider) — ce composant ne gère que la sauvegarde.
  */
@@ -18,9 +19,9 @@ import { saveCV } from "../lib/cloud";
 type Status = { kind: "ok" | "error"; text: string } | null;
 
 export function CloudControls() {
-  const cvId = useCVStore((s) => s.cvId);
-  const cvTitle = useCVStore((s) => s.cvTitle);
-  const setCvMeta = useCVStore((s) => s.setCvMeta);
+  const docId = useFactureStore((s) => s.docId);
+  const docTitle = useFactureStore((s) => s.docTitle);
+  const setDocMeta = useFactureStore((s) => s.setDocMeta);
 
   const { supabase, session } = useAuth();
 
@@ -48,17 +49,27 @@ export function CloudControls() {
     setBusy(true);
     setStatus(null);
     try {
-      const state = useCVStore.getState();
-      // Titre par défaut : "CV Prénom Nom" si dispo, sinon "Mon CV".
-      const fallback =
-        `CV ${state.data.basics.firstName} ${state.data.basics.lastName}`.trim();
-      const title = cvTitle.trim() || (fallback !== "CV" ? fallback : "Mon CV");
+      const state = useFactureStore.getState();
+      // Titre par défaut : « Facture 2026-0001 — Client » selon la saisie.
+      const fallback = [
+        `${DOCUMENT_TYPE_LABELS[state.type]} ${state.numeroApercu}`.trim(),
+        state.customer.raisonSociale.trim(),
+      ]
+        .filter(Boolean)
+        .join(" — ");
+      const title = docTitle.trim() || fallback;
 
-      const id = await saveCV(supabase, session, state.data, title, cvId);
-      setCvMeta(id, title);
+      const id = await saveFacture(
+        supabase,
+        session,
+        snapshotFromState(state),
+        title,
+        docId
+      );
+      setDocMeta(id, title);
       setStatus({
         kind: "ok",
-        text: cvId ? "CV mis à jour." : "CV enregistré en ligne.",
+        text: docId ? "Document mis à jour." : "Document enregistré en ligne.",
       });
     } catch (err) {
       setStatus({
@@ -93,9 +104,9 @@ export function CloudControls() {
             <div className="space-y-2">
               <input
                 className={fieldClasses}
-                value={cvTitle}
-                placeholder="Titre du CV (ex. CV Développeur)"
-                onChange={(e) => setCvMeta(cvId, e.target.value)}
+                value={docTitle}
+                placeholder="Titre (ex. Facture 2026-0001)"
+                onChange={(e) => setDocMeta(docId, e.target.value)}
               />
               <Button
                 variant="accent"
@@ -109,10 +120,10 @@ export function CloudControls() {
                 ) : (
                   <CloudUpload className="h-4 w-4" />
                 )}
-                {cvId ? "Mettre à jour en ligne" : "Enregistrer en ligne"}
+                {docId ? "Mettre à jour en ligne" : "Enregistrer en ligne"}
               </Button>
               <Link
-                href="/tools/cv-builder/cvs"
+                href="/tools/factures/liste"
                 onClick={() => setOpen(false)}
                 className={cn(
                   "flex h-8 w-full items-center justify-center gap-1.5 rounded-lg",
@@ -120,13 +131,13 @@ export function CloudControls() {
                 )}
               >
                 <List className="h-4 w-4" />
-                Liste des CVs
+                Liste des documents
               </Link>
             </div>
           ) : (
             <p className="text-xs text-content-secondary">
               Connectez-vous via le bouton « Connexion » en haut à droite pour
-              sauvegarder votre CV en ligne.
+              sauvegarder vos documents en ligne.
             </p>
           )}
 
