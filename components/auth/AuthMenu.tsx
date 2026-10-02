@@ -15,7 +15,7 @@ import { useAuth } from "./AuthProvider";
 type Status = { kind: "ok" | "error"; text: string } | null;
 
 export function AuthMenu() {
-  const { supabase, session, pseudo, signIn, signOut } = useAuth();
+  const { configured, pseudo, signIn, signOut } = useAuth();
 
   const [open, setOpen] = useState(false);
   const [pseudoInput, setPseudoInput] = useState("");
@@ -35,8 +35,8 @@ export function AuthMenu() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
 
-  // Supabase non configuré : l'app reste 100 % hors-ligne.
-  if (!supabase) return null;
+  // Base non configurée (DATABASE_URL) : l'app reste 100 % hors-ligne.
+  if (configured === false) return null;
 
   const handleSignIn = async () => {
     setBusy(true);
@@ -71,7 +71,7 @@ export function AuthMenu() {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        title={session ? `Connecté : ${pseudo}` : "Connexion"}
+        title={pseudo ? `Connecté : ${pseudo}` : "Connexion"}
       >
         <UserRound className="h-4 w-4" />
         <span className="hidden md:inline">{pseudo ?? "Connexion"}</span>
@@ -79,7 +79,7 @@ export function AuthMenu() {
 
       {open && (
         <div className="glass-solid absolute right-0 top-[calc(100%+0.5rem)] z-30 w-64 rounded-xl p-3 shadow-lg">
-          {session ? (
+          {pseudo ? (
             <div className="space-y-2">
               <p className="text-xs text-content-secondary">
                 Connecté :{" "}

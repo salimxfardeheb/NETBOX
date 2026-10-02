@@ -151,6 +151,63 @@ export function headerContactItems(data: CVData): ContactItem[] {
     .map(([type, value]) => ({ type, value: value!.trim() }));
 }
 
+/* ---------- Ajustement des contacts d'en-tête sur une ligne ---------- */
+
+/**
+ * Largeur utile du bloc de l'en-tête (nom, poste, email, téléphone),
+ * en points — l'aperçu rend l'A4 à 595 px pour 1 px = 1 pt : 78 % de
+ * la largeur de la feuille, moins les marges latérales de la cellule.
+ */
+const HEADER_CONTACT_WIDTH = 432;
+/** Écart icône ↔ texte : fixe, il ne suit pas la taille du texte. */
+const HEADER_CONTACT_GAP = 6;
+/** Largeur de l'icône, en fraction de la taille du texte. */
+const HEADER_CONTACT_ICON = 1.05;
+/**
+ * Largeur moyenne d'un caractère, en fraction de la taille de police.
+ * Mesurée dans le navigateur sur des adresses email rendues avec la
+ * police de l'aperçu : 0,54 à 0,56 — on retient le haut de la
+ * fourchette pour ne jamais sous-estimer la place occupée.
+ */
+const HEADER_CONTACT_CHAR = 0.56;
+/** Plancher de lisibilité (couvre les adresses jusqu'à ~42 caractères). */
+const HEADER_CONTACT_MIN = 0.65;
+
+/**
+ * Facteur de réduction à appliquer à une ligne de l'en-tête (intitulé
+ * du poste, email, téléphone) pour qu'elle tienne sur UNE seule ligne.
+ * Retourne 1 quand le texte tient déjà : c'est le cas courant depuis
+ * que tout l'en-tête occupe la largeur du bandeau, le facteur ne joue
+ * que pour un texte vraiment très long, qui déformerait la mise en page.
+ *
+ * La même règle sert à l'aperçu et à l'export .docx, sur la contrainte
+ * de l'aperçu (la plus serrée : sa police est plus large que le Calibri
+ * du .docx) — les deux rendus restent ainsi identiques.
+ *
+ * @param fontSize taille nominale du texte, en points.
+ * @param iconEm largeur de l'icône qui précède le texte, en em (0 = aucune).
+ */
+function headerFitScale(value: string, fontSize: number, iconEm: number): number {
+  const text = value.length * HEADER_CONTACT_CHAR * fontSize;
+  const icon = iconEm * fontSize;
+  const available =
+    HEADER_CONTACT_WIDTH - (iconEm > 0 ? HEADER_CONTACT_GAP : 0);
+  // Texte et icône se réduisent ensemble : le facteur est le rapport
+  // direct entre la place disponible et la largeur occupée.
+  if (text + icon <= available) return 1;
+  return Math.max(HEADER_CONTACT_MIN, available / (text + icon));
+}
+
+/** Email ou téléphone : le texte est précédé de son icône. */
+export function headerContactScale(value: string, fontSize: number): number {
+  return headerFitScale(value, fontSize, HEADER_CONTACT_ICON);
+}
+
+/** Intitulé du poste : même règle, sans icône. */
+export function headerTitleScale(value: string, fontSize: number): number {
+  return headerFitScale(value, fontSize, 0);
+}
+
 /**
  * Bloc « Informations personnelles » du corps : date de naissance,
  * nationalité, adresse, situation familiale, permis, liens (site, LinkedIn,
@@ -592,6 +649,26 @@ export async function buildModele4(data: CVData): Promise<Document> {
 
   const contactItems = headerContactItems(data);
 
+  /**
+   * Une ligne de contact de l'en-tête : icône + valeur. Même règle de
+   * réduction que l'aperçu, pour un rendu identique.
+   */
+  const contactParagraph = (item: ContactItem) => {
+    const fit = headerContactScale(item.value, 11 * scale);
+    const icon = iconRun(item.type, HEADER_ICON_COLOR, iconPx(22 * fit));
+    return new Paragraph({
+      spacing: { after: sp(80) },
+      children: [
+        ...(icon ? [icon, new TextRun({ text: "  " })] : []),
+        new TextRun({
+          text: item.value,
+          color: C.headerContact,
+          size: sz(22 * fit),
+        }),
+      ],
+    });
+  };
+
   const header = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     borders: TableBorders.NONE,
@@ -607,7 +684,7 @@ export async function buildModele4(data: CVData): Promise<Document> {
             children: photoChildren,
           }),
           noBordersCell({
-            width: { size: 46, type: WidthType.PERCENTAGE },
+            width: { size: 78, type: WidthType.PERCENTAGE },
             shading: { type: ShadingType.CLEAR, fill: C.headerBg },
             verticalAlign: VerticalAlign.CENTER,
             margins: { top: 220, bottom: 220, left: 200, right: 80 },
@@ -626,35 +703,19 @@ export async function buildModele4(data: CVData): Promise<Document> {
                 ],
               }),
               new Paragraph({
+                spacing: { after: sp(contactItems.length > 0 ? 120 : 0) },
                 children: [
-                  new TextRun({ text: basics.title, color: C.headerTitle, size: sz(28) }),
+                  new TextRun({
+                    text: basics.title,
+                    color: C.headerTitle,
+                    // Même réduction que l'aperçu pour tenir sur une ligne.
+                    size: sz(28 * headerTitleScale(basics.title, 14 * scale)),
+                  }),
                 ],
               }),
+              // Email et téléphone : sous le nom et le poste.
+              ...contactItems.map((item) => contactParagraph(item)),
             ],
-          }),
-          noBordersCell({
-            width: { size: 32, type: WidthType.PERCENTAGE },
-            shading: { type: ShadingType.CLEAR, fill: C.headerBg },
-            verticalAlign: VerticalAlign.CENTER,
-            margins: { top: 220, bottom: 220, left: 80, right: 200 },
-            children:
-              contactItems.length > 0
-                ? contactItems.map((item) => {
-                    // Email + téléphone : texte agrandi, précédé de leur icône.
-                    const icon = iconRun(item.type, HEADER_ICON_COLOR, iconPx(22));
-                    return new Paragraph({
-                      spacing: { after: sp(80) },
-                      children: [
-                        ...(icon ? [icon, new TextRun({ text: "  " })] : []),
-                        new TextRun({
-                          text: item.value,
-                          color: C.headerContact,
-                          size: sz(22),
-                        }),
-                      ],
-                    });
-                  })
-                : [new Paragraph("")],
           }),
         ],
       }),

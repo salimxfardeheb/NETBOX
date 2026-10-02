@@ -63,7 +63,7 @@ export interface ColonnesVisibles {
 
 /**
  * Snapshot JSON sérialisable de l'éditeur — c'est exactement ce qui est
- * enregistré dans Supabase (colonne jsonb, aucun fichier en Storage).
+ * enregistré en base (colonne JSON, aucun fichier).
  * Données du document + préférences d'affichage, pour retrouver le
  * document tel qu'on l'a laissé.
  */
@@ -116,7 +116,7 @@ interface FactureState {
   /** Bon de livraison : les prix sont optionnels sur le document rendu. */
   afficherPrixBL: boolean;
 
-  /** Ligne Supabase du document ouvert (null = jamais enregistré). */
+  /** Ligne en base du document ouvert (null = jamais enregistré). */
   docId: string | null;
   /** Titre sous lequel le document est enregistré en ligne. */
   docTitle: string;

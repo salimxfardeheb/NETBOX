@@ -38,7 +38,7 @@ function NewDocHandler() {
 /**
  * Module Factures — rédaction et rendu de documents commerciaux
  * (facture, proforma, devis, bon de livraison), avec sauvegarde en
- * ligne des données JSON (Supabase, aucun fichier en Storage).
+ * ligne des données JSON (Neon via Prisma, aucun fichier).
  */
 export default function FacturesPage() {
   const topbarSlot = useTopbarSlot((s) => s.el);
@@ -98,7 +98,7 @@ export default function FacturesPage() {
         <span className="hidden md:inline">Nouveau</span>
       </Button>
 
-      {/* Connexion + sauvegarde en ligne (JSON dans Supabase). */}
+      {/* Connexion + sauvegarde en ligne (JSON dans Neon). */}
       <CloudControls />
       <Button
         variant="glass"

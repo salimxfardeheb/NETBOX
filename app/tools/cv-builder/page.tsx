@@ -148,7 +148,7 @@ export default function CVBuilderPage() {
         <span className="hidden md:inline">Réinitialiser</span>
       </Button>
 
-      {/* Connexion + sauvegarde en ligne (Supabase). */}
+      {/* Connexion + sauvegarde en ligne (Neon via Prisma). */}
       <CloudControls />
 
       <div className="relative" ref={menuRef}>

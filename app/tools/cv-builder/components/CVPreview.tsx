@@ -24,10 +24,13 @@ import { cn } from "@/lib/cn";
 import type { CVColumn, CVData, CVEntry, CVLayout, CVSectionId } from "../lib/types";
 import { levelToPercent } from "../lib/levels";
 import {
+  type ContactItem,
   CV_ICONS,
   MODELE4_COLORS,
   MODELE4_SECTION_TITLES,
   headerContactItems,
+  headerContactScale,
+  headerTitleScale,
   personalItems,
 } from "../templates/modele4";
 
@@ -64,6 +67,26 @@ const PAGE_BREAK_H = 960;
  * à `10px × fontScale`, donc tout le document suit le réglage
  * "taille de l'écriture" — comme l'export Word.
  */
+
+/**
+ * Une ligne de contact de l'en-tête : icône + valeur, toujours sur une
+ * seule ligne. La taille n'est réduite que si la valeur ne tient pas
+ * dans `width` (une adresse email très longue) — sinon email et
+ * téléphone s'affichent à la même taille.
+ */
+function HeaderContact({ item, fontPx }: { item: ContactItem; fontPx: number }) {
+  const Icon = CV_ICONS[item.type];
+  const fit = headerContactScale(item.value, fontPx);
+  return (
+    <span
+      className="flex items-center gap-1.5"
+      style={{ fontSize: `${fit}em` }}
+    >
+      <Icon className="h-[1.05em] w-[1.05em] shrink-0" />
+      <span className="whitespace-nowrap">{item.value}</span>
+    </span>
+  );
+}
 
 function Heading({ children }: { children: ReactNode }) {
   return (
@@ -506,8 +529,12 @@ export function CVPreview({
                 />
               )}
             </div>
+            {/* Nom, poste puis contacts, empilés sur toute la largeur
+                restante. min-w-0 : sans lui, une ligne non coupée
+                élargirait le bloc (min-width auto) et fausserait le
+                partage 22/78 %. */}
             <div
-              className="flex w-[46%] flex-col justify-center px-4 py-3"
+              className="flex w-[78%] min-w-0 flex-col justify-center px-4 py-3"
               style={{ backgroundColor: HEADER_BG }}
             >
               <p className="text-[2.6em] leading-tight text-white">
@@ -515,24 +542,20 @@ export function CVPreview({
                 <span className="font-bold uppercase">{lastName}</span>
               </p>
               <p className="mt-1 text-[1.4em]" style={{ color: HEADER_TITLE }}>
-                {title}
+                <span
+                  className="block whitespace-nowrap"
+                  style={{ fontSize: `${headerTitleScale(title, 1.4 * baseFontPx)}em` }}
+                >
+                  {title}
+                </span>
               </p>
-            </div>
-            <div
-              className="flex w-[32%] flex-col justify-center px-4 py-3"
-              style={{ backgroundColor: HEADER_BG }}
-            >
-              {/* En-tête : uniquement email + téléphone, agrandis et avec icône. */}
-              <ul className="space-y-2 text-[1.1em]" style={{ color: HEADER_CONTACT }}>
-                {contactItems.map((item, i) => {
-                  const Icon = CV_ICONS[item.type];
-                  return (
-                    <li key={i} className="flex items-start gap-1.5 break-words">
-                      <Icon className="mt-[0.15em] h-[1.05em] w-[1.05em] shrink-0" />
-                      <span className="min-w-0 break-words">{item.value}</span>
-                    </li>
-                  );
-                })}
+              {/* Email et téléphone : même taille, une ligne chacun. */}
+              <ul className="mt-2 space-y-1 text-[1.1em]" style={{ color: HEADER_CONTACT }}>
+                {contactItems.map((item, i) => (
+                  <li key={i}>
+                    <HeaderContact item={item} fontPx={1.1 * baseFontPx} />
+                  </li>
+                ))}
               </ul>
             </div>
           </div>

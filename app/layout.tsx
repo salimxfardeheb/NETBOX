@@ -23,7 +23,7 @@ export default function RootLayout({
         {/* Fixed blurred orbs behind everything. */}
         <Background />
 
-        {/* Session Supabase partagée par toute la plateforme. */}
+        {/* Session applicative partagée par toute la plateforme. */}
         <AuthProvider>
           {/* Fixed glass navigation rail. */}
           <Sidebar />

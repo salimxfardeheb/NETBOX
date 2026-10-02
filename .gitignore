@@ -26,3 +26,6 @@ next-env.d.ts
 # env files
 .env*.local
 .env
+
+# prisma (client généré à l'install/au build)
+/lib/generated

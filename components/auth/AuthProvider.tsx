@@ -2,29 +2,33 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
-import type { Session, SupabaseClient } from "@supabase/supabase-js";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import { PSEUDO_RE, pseudoFromSession, pseudoToEmail } from "@/lib/auth/pseudo";
+import { apiFetch } from "@/lib/api-client";
+import { validateCredentials } from "@/lib/auth/pseudo";
 
 /**
- * Authentification globale de la plateforme : un seul client Supabase,
- * une seule session, partagés par tous les modules via useAuth().
- * Les modules ne gèrent plus la connexion — seulement leurs données.
+ * Authentification globale de la plateforme : une seule session
+ * (cookie httpOnly posé par /api/auth/login), partagée par tous les
+ * modules via useAuth(). Les modules ne gèrent plus la connexion —
+ * seulement leurs données, via leurs routes /api.
  */
 
+type SessionResponse = { configured: boolean; pseudo: string | null };
+
 type AuthContextValue = {
-  /** null si Supabase n'est pas configuré (.env.local absent). */
-  supabase: SupabaseClient | null;
-  /** undefined = session pas encore connue (chargement). */
-  session: Session | null | undefined;
-  /** Pseudo du compte connecté, sinon null. */
-  pseudo: string | null;
+  /**
+   * false si la base n'est pas configurée (DATABASE_URL absent) :
+   * l'app reste utilisable, sans sauvegarde en ligne.
+   * undefined tant que /api/auth/session n'a pas répondu.
+   */
+  configured: boolean | undefined;
+  /** undefined = session pas encore connue, null = déconnecté. */
+  pseudo: string | null | undefined;
   /** Retourne un message d'erreur à afficher, ou null si OK. */
   signIn: (pseudo: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
@@ -32,58 +36,59 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function validateCredentials(pseudo: string, password: string): string | null {
-  if (!PSEUDO_RE.test(pseudo)) {
-    return "Pseudo : 3 à 20 caractères, lettres et chiffres uniquement.";
-  }
-  if (password.length < 6) return "Mot de passe : 6 caractères minimum.";
-  return null;
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Client créé une seule fois, seulement si la config existe.
-  const supabaseRef = useRef<SupabaseClient | null>(null);
-  if (supabaseRef.current === null && isSupabaseConfigured()) {
-    supabaseRef.current = createClient();
-  }
-  const supabase = supabaseRef.current;
+  const [configured, setConfigured] = useState<boolean | undefined>(undefined);
+  const [pseudo, setPseudo] = useState<string | null | undefined>(undefined);
 
-  const [session, setSession] = useState<Session | null | undefined>(
-    supabase ? undefined : null
-  );
-
+  // État de session au montage : le cookie n'est pas lisible en JS
+  // (httpOnly), c'est le serveur qui fait autorité.
   useEffect(() => {
-    if (!supabase) return;
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, [supabase]);
+    let cancelled = false;
+    apiFetch<SessionResponse>("/api/auth/session")
+      .then((data) => {
+        if (cancelled) return;
+        setConfigured(data.configured);
+        setPseudo(data.pseudo);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setConfigured(false);
+        setPseudo(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const signIn = useCallback(async (rawPseudo: string, password: string) => {
+    const candidate = rawPseudo.trim().toLowerCase();
+    const invalid = validateCredentials(candidate, password);
+    if (invalid) return invalid;
+
+    try {
+      const data = await apiFetch<{ pseudo: string }>("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ pseudo: candidate, password }),
+      });
+      setPseudo(data.pseudo);
+      setConfigured(true);
+      return null;
+    } catch (err) {
+      return (err as Error).message;
+    }
+  }, []);
+
+  const signOut = useCallback(async () => {
+    try {
+      await apiFetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      setPseudo(null);
+    }
+  }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({
-      supabase,
-      session,
-      pseudo: session ? pseudoFromSession(session) : null,
-
-      async signIn(rawPseudo, password) {
-        if (!supabase) return "Supabase n'est pas configuré.";
-        const pseudo = rawPseudo.trim().toLowerCase();
-        const invalid = validateCredentials(pseudo, password);
-        if (invalid) return invalid;
-        const { error } = await supabase.auth.signInWithPassword({
-          email: pseudoToEmail(pseudo),
-          password,
-        });
-        return error ? "Pseudo ou mot de passe incorrect." : null;
-      },
-
-      async signOut() {
-        if (supabase) await supabase.auth.signOut();
-      },
-    }),
-    [supabase, session]
+    () => ({ configured, pseudo, signIn, signOut }),
+    [configured, pseudo, signIn, signOut]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

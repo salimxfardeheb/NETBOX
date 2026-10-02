@@ -10,7 +10,7 @@ import { useCVStore } from "../lib/store";
 import { saveCV } from "../lib/cloud";
 
 /**
- * Enregistrer/Charger le CV en ligne (Supabase).
+ * Enregistrer le CV en ligne (routes /api/cvs → Prisma/Neon).
  * La connexion est globale (bouton « Connexion » de la Topbar,
  * via AuthProvider) — ce composant ne gère que la sauvegarde.
  */
@@ -22,7 +22,7 @@ export function CloudControls() {
   const cvTitle = useCVStore((s) => s.cvTitle);
   const setCvMeta = useCVStore((s) => s.setCvMeta);
 
-  const { supabase, session } = useAuth();
+  const { configured, pseudo } = useAuth();
 
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -40,11 +40,11 @@ export function CloudControls() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
 
-  // Supabase non configuré : le module reste 100 % hors-ligne.
-  if (!supabase) return null;
+  // Base non configurée (DATABASE_URL) : le module reste hors-ligne.
+  if (configured === false) return null;
 
   const handleSave = async () => {
-    if (!session) return;
+    if (!pseudo) return;
     setBusy(true);
     setStatus(null);
     try {
@@ -54,7 +54,7 @@ export function CloudControls() {
         `CV ${state.data.basics.firstName} ${state.data.basics.lastName}`.trim();
       const title = cvTitle.trim() || (fallback !== "CV" ? fallback : "Mon CV");
 
-      const id = await saveCV(supabase, session, state.data, title, cvId);
+      const id = await saveCV(state.data, title, cvId);
       setCvMeta(id, title);
       setStatus({
         kind: "ok",
@@ -89,7 +89,7 @@ export function CloudControls() {
 
       {open && (
         <div className="glass-solid absolute right-0 top-[calc(100%+0.5rem)] z-30 w-64 rounded-xl p-3 shadow-lg">
-          {session ? (
+          {pseudo ? (
             <div className="space-y-2">
               <input
                 className={fieldClasses}

@@ -1,0 +1,54 @@
+// Schéma Prisma — base Neon (PostgreSQL).
+// L'URL de connexion vient de prisma.config.ts (DATABASE_URL, .env.local).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Compte de la plateforme. Pas d'inscription publique : les comptes
+/// sont créés par le script de seed (npm run db:seed).
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  pseudo       String    @unique
+  passwordHash String    @map("password_hash")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  cvs          Cv[]
+  factures     Facture[]
+
+  @@map("users")
+}
+
+/// CV du module cv-builder. `data` = snapshot JSON complet de l'éditeur
+/// (photo comprise, en base64 compressé).
+model Cv {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  title     String
+  data      Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([updatedAt(sort: Desc)])
+  @@map("cvs")
+}
+
+/// Document du module Factures (facture, proforma, devis, bon de
+/// livraison). `data` = snapshot JSON de l'éditeur.
+model Facture {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  title     String
+  data      Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([updatedAt(sort: Desc)])
+  @@map("factures")
+}

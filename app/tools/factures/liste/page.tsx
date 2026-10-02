@@ -25,26 +25,24 @@ export default function FacturesListPage() {
   const setDocMeta = useFactureStore((s) => s.setDocMeta);
 
   // Session globale (AuthProvider) : undefined = chargement.
-  const { supabase, session } = useAuth();
+  const { configured, pseudo } = useAuth();
   const [rows, setRows] = useState<FactureListRow[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!supabase) return;
     try {
-      setRows(await listFactures(supabase));
+      setRows(await listFactures());
     } catch (err) {
       setError(`Chargement de la liste : ${(err as Error).message}`);
     }
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
-    if (session) void refresh();
-  }, [session, refresh]);
+    if (pseudo) void refresh();
+  }, [pseudo, refresh]);
 
   const handleOpen = async (row: FactureListRow) => {
-    if (!supabase) return;
     if (
       !window.confirm(
         `Ouvrir « ${row.title} » ? Le document actuellement dans l'éditeur sera remplacé.`
@@ -55,7 +53,7 @@ export default function FacturesListPage() {
     setBusyId(row.id);
     setError(null);
     try {
-      const { title, snapshot } = await loadFacture(supabase, row.id);
+      const { title, snapshot } = await loadFacture(row.id);
       applySnapshot(snapshot, row.id, title);
       router.push("/tools/factures");
     } catch (err) {
@@ -65,12 +63,11 @@ export default function FacturesListPage() {
   };
 
   const handleDelete = async (row: FactureListRow) => {
-    if (!supabase) return;
     if (!window.confirm(`Supprimer définitivement « ${row.title} » ?`)) return;
     setBusyId(row.id);
     setError(null);
     try {
-      await deleteFacture(supabase, row.id);
+      await deleteFacture(row.id);
       // Si le document supprimé était ouvert dans l'éditeur, on le
       // détache pour qu'une future sauvegarde recrée une ligne proprement.
       if (useFactureStore.getState().docId === row.id) {
@@ -107,15 +104,16 @@ export default function FacturesListPage() {
         </Link>
       </div>
 
-      {!supabase ? (
+      {configured === false ? (
         <p className="glass rounded-glass p-6 text-sm text-content-secondary">
-          Supabase n&apos;est pas configuré (.env.local).
+          La base de données n&apos;est pas configurée (DATABASE_URL dans
+          .env.local).
         </p>
-      ) : session === undefined ? (
+      ) : pseudo === undefined ? (
         <div className="glass flex h-32 items-center justify-center rounded-glass">
           <Loader2 className="h-5 w-5 animate-spin text-content-secondary" />
         </div>
-      ) : session === null ? (
+      ) : pseudo === null ? (
         <p className="glass rounded-glass p-6 text-sm text-content-secondary">
           Connectez-vous pour voir les documents, via le bouton
           « Connexion » en haut à droite.
@@ -142,7 +140,7 @@ export default function FacturesListPage() {
                   {row.title}
                 </p>
                 <p className="text-xs text-content-secondary">
-                  Modifié le {formatDate(row.updated_at)}
+                  Modifié le {formatDate(row.updatedAt)}
                 </p>
               </div>
               <Button

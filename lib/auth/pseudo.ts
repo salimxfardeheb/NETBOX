@@ -1,29 +1,28 @@
-import type { Session } from "@supabase/supabase-js";
-
 /**
- * Mapping pseudo ↔ email synthétique, partagé par toute la plateforme.
- * L'utilisateur ne voit jamais d'email : il se connecte avec un pseudo,
- * mappé sur une sous-adresse Gmail réelle (adresse+pseudo@gmail.com),
- * traitée par Supabase comme un compte distinct.
+ * Règles du pseudo, partagées par le formulaire de connexion et les
+ * routes d'API : un compte = un pseudo (table `users`), pas d'email.
  */
 
-// Supabase valide le domaine des emails (DNS) : un domaine fictif est
-// rejeté, d'où la sous-adresse Gmail réelle.
-const PSEUDO_EMAIL_BASE = "salimfardeheb442";
-const PSEUDO_EMAIL_DOMAIN = "gmail.com";
-
-// Le "+" Gmail n'accepte pas les tirets/underscores partout : on reste
-// sur lettres + chiffres.
 export const PSEUDO_RE = /^[a-z0-9]{3,20}$/;
 
-export function pseudoToEmail(pseudo: string): string {
-  return `${PSEUDO_EMAIL_BASE}+${pseudo.toLowerCase()}@${PSEUDO_EMAIL_DOMAIN}`;
+/** Longueur minimale du mot de passe. */
+export const PASSWORD_MIN_LENGTH = 6;
+
+/** Normalise la saisie (espaces, casse) avant validation ou requête. */
+export function normalizePseudo(raw: string): string {
+  return raw.trim().toLowerCase();
 }
 
-export function pseudoFromSession(session: Session): string {
-  const meta = session.user.user_metadata?.pseudo;
-  if (typeof meta === "string" && meta) return meta;
-  // Fallback : extrait le pseudo de "base+pseudo@gmail.com".
-  const local = session.user.email?.split("@")[0] ?? "";
-  return local.split("+")[1] ?? local ?? "?";
+/** Retourne un message d'erreur à afficher, ou null si la saisie est valide. */
+export function validateCredentials(
+  pseudo: string,
+  password: string
+): string | null {
+  if (!PSEUDO_RE.test(pseudo)) {
+    return "Pseudo : 3 à 20 caractères, lettres et chiffres uniquement.";
+  }
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return `Mot de passe : ${PASSWORD_MIN_LENGTH} caractères minimum.`;
+  }
+  return null;
 }

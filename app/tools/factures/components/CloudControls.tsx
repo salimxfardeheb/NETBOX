@@ -11,7 +11,8 @@ import { saveFacture } from "../lib/cloud";
 import { snapshotFromState, useFactureStore } from "../lib/store";
 
 /**
- * Enregistrer le document en ligne (Supabase, JSON uniquement).
+ * Enregistrer le document en ligne (routes /api/factures → Prisma/Neon,
+ * JSON uniquement).
  * La connexion est globale (bouton « Connexion » de la Topbar,
  * via AuthProvider) — ce composant ne gère que la sauvegarde.
  */
@@ -23,7 +24,7 @@ export function CloudControls() {
   const docTitle = useFactureStore((s) => s.docTitle);
   const setDocMeta = useFactureStore((s) => s.setDocMeta);
 
-  const { supabase, session } = useAuth();
+  const { configured, pseudo } = useAuth();
 
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -41,11 +42,11 @@ export function CloudControls() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
 
-  // Supabase non configuré : le module reste 100 % hors-ligne.
-  if (!supabase) return null;
+  // Base non configurée (DATABASE_URL) : le module reste hors-ligne.
+  if (configured === false) return null;
 
   const handleSave = async () => {
-    if (!session) return;
+    if (!pseudo) return;
     setBusy(true);
     setStatus(null);
     try {
@@ -59,13 +60,7 @@ export function CloudControls() {
         .join(" — ");
       const title = docTitle.trim() || fallback;
 
-      const id = await saveFacture(
-        supabase,
-        session,
-        snapshotFromState(state),
-        title,
-        docId
-      );
+      const id = await saveFacture(snapshotFromState(state), title, docId);
       setDocMeta(id, title);
       setStatus({
         kind: "ok",
@@ -100,7 +95,7 @@ export function CloudControls() {
 
       {open && (
         <div className="glass-solid absolute right-0 top-[calc(100%+0.5rem)] z-30 w-64 rounded-xl p-3 shadow-lg">
-          {session ? (
+          {pseudo ? (
             <div className="space-y-2">
               <input
                 className={fieldClasses}
