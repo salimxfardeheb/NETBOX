@@ -15,7 +15,7 @@ import { useAuth } from "./AuthProvider";
 type Status = { kind: "ok" | "error"; text: string } | null;
 
 export function AuthMenu() {
-  const { pseudo, signIn, signOut } = useAuth();
+  const { configured, pseudo, signIn, signOut } = useAuth();
 
   const [open, setOpen] = useState(false);
   const [pseudoInput, setPseudoInput] = useState("");
@@ -34,6 +34,9 @@ export function AuthMenu() {
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
+
+  // Base non configurée (DATABASE_URL) : l'app reste 100 % hors-ligne.
+  if (configured === false) return null;
 
   const handleSignIn = async () => {
     setBusy(true);
@@ -138,9 +141,7 @@ export function AuthMenu() {
             <p
               className={cn(
                 "mt-2 text-xs",
-                status.kind === "ok"
-                  ? "text-content-secondary"
-                  : "text-red-400",
+                status.kind === "ok" ? "text-content-secondary" : "text-red-400"
               )}
             >
               {status.text}
