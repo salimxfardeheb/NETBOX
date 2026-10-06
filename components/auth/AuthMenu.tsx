@@ -138,7 +138,9 @@ export function AuthMenu() {
             <p
               className={cn(
                 "mt-2 text-xs",
-                status.kind === "ok" ? "text-content-secondary" : "text-red-400"
+                status.kind === "ok"
+                  ? "text-content-secondary"
+                  : "text-red-400",
               )}
             >
               {status.text}
