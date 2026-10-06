@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       .catch(() => {
         if (cancelled) return;
-        setConfigured(false);
+        setConfigured(true);
         setPseudo(null);
       });
     return () => {
@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<AuthContextValue>(
     () => ({ configured, pseudo, signIn, signOut }),
-    [configured, pseudo, signIn, signOut]
+    [configured, pseudo, signIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

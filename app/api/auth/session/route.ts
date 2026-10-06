@@ -19,6 +19,6 @@ export async function GET() {
     });
   } catch (err) {
     console.error("[api] session", err);
-    return NextResponse.json({ configured: false, pseudo: null });
+    return NextResponse.json({ configured: true, pseudo: null });
   }
 }
