@@ -214,14 +214,21 @@ export function BasicsSection() {
           >
             <div className="space-y-2">
               {personalCustom.map((value, index) => (
-                <SortableRow key={personalCustomIds[index]} id={personalCustomIds[index]}>
+                <SortableRow
+                  key={personalCustomIds[index]}
+                  id={personalCustomIds[index]}
+                >
                   <div className="flex items-center gap-2">
                     <TextInput
                       value={value}
                       placeholder="Ex. Disponibilité : immédiate"
-                      onChange={(e) => updatePersonalCustom(index, e.target.value)}
+                      onChange={(e) =>
+                        updatePersonalCustom(index, e.target.value)
+                      }
                     />
-                    <ItemControls onRemove={() => removePersonalCustom(index)} />
+                    <ItemControls
+                      onRemove={() => removePersonalCustom(index)}
+                    />
                   </div>
                 </SortableRow>
               ))}

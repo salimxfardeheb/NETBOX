@@ -14,7 +14,11 @@ import type {
 import type { TemplateKey } from "../templates";
 
 /** Sections contenant des listes d'objets. */
-export type ItemSection = "experience" | "education" | "languages" | "informatique";
+export type ItemSection =
+  | "experience"
+  | "education"
+  | "languages"
+  | "informatique";
 /** Sections contenant des listes de chaînes. */
 export type StringSection = "atouts" | "interests";
 
@@ -26,8 +30,20 @@ interface SectionItemMap {
 }
 
 const EMPTY_ITEM: { [S in ItemSection]: () => SectionItemMap[S] } = {
-  experience: () => ({ title: "", org: "", location: "", date: "", bullets: [] }),
-  education: () => ({ title: "", org: "", location: "", date: "", bullets: [] }),
+  experience: () => ({
+    title: "",
+    org: "",
+    location: "",
+    date: "",
+    bullets: [],
+  }),
+  education: () => ({
+    title: "",
+    org: "",
+    location: "",
+    date: "",
+    bullets: [],
+  }),
   languages: () => ({ name: "", level: "B1" }),
   informatique: () => ({ label: "", items: "" }),
 };
@@ -110,7 +126,14 @@ function move(list: unknown[], index: number, dir: "up" | "down"): void {
 
 /** Déplace l'élément `from` à la position `to` (drag-and-drop). */
 function reorder(list: unknown[], from: number, to: number): void {
-  if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) return;
+  if (
+    from === to ||
+    from < 0 ||
+    to < 0 ||
+    from >= list.length ||
+    to >= list.length
+  )
+    return;
   const [item] = list.splice(from, 1);
   list.splice(to, 0, item);
 }
@@ -142,7 +165,7 @@ interface CVStore {
   updateItem: <S extends ItemSection>(
     section: S,
     index: number,
-    patch: Partial<SectionItemMap[S]>
+    patch: Partial<SectionItemMap[S]>,
   ) => void;
   removeItem: (section: ItemSection, index: number) => void;
   moveItem: (section: ItemSection, index: number, dir: "up" | "down") => void;
@@ -151,7 +174,11 @@ interface CVStore {
   addString: (section: StringSection) => void;
   updateString: (section: StringSection, index: number, value: string) => void;
   removeString: (section: StringSection, index: number) => void;
-  moveString: (section: StringSection, index: number, dir: "up" | "down") => void;
+  moveString: (
+    section: StringSection,
+    index: number,
+    dir: "up" | "down",
+  ) => void;
   reorderString: (section: StringSection, from: number, to: number) => void;
 
   /** Repositionne les sections dans les colonnes (drag-and-drop preview). */
@@ -161,7 +188,10 @@ interface CVStore {
   setFontScale: (value: number) => void;
 
   addCustomSection: (kind: CVCustomKind) => void;
-  updateCustomSection: (id: string, patch: Partial<Omit<CVCustomSection, "id">>) => void;
+  updateCustomSection: (
+    id: string,
+    patch: Partial<Omit<CVCustomSection, "id">>,
+  ) => void;
   removeCustomSection: (id: string) => void;
 
   reset: () => void;
@@ -329,8 +359,12 @@ export const useCVStore = create<CVStore>()(
       removeCustomSection: (id) =>
         set((state) => {
           state.data.custom = state.data.custom.filter((c) => c.id !== id);
-          state.data.layout.left = state.data.layout.left.filter((s) => s !== id);
-          state.data.layout.right = state.data.layout.right.filter((s) => s !== id);
+          state.data.layout.left = state.data.layout.left.filter(
+            (s) => s !== id,
+          );
+          state.data.layout.right = state.data.layout.right.filter(
+            (s) => s !== id,
+          );
         }),
 
       reset: () =>
@@ -382,6 +416,6 @@ export const useCVStore = create<CVStore>()(
         }
         return state;
       },
-    }
-  )
+    },
+  ),
 );

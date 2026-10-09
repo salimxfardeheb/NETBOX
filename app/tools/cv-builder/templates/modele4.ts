@@ -100,8 +100,12 @@ const MODELE4_SECTION_TITLES_EN: Record<string, string> = {
   informatique: "IT skills",
 };
 
-export function modele4SectionTitle(id: string, language: CVData["language"]): string {
-  const titles = language === "en" ? MODELE4_SECTION_TITLES_EN : MODELE4_SECTION_TITLES;
+export function modele4SectionTitle(
+  id: string,
+  language: CVData["language"],
+): string {
+  const titles =
+    language === "en" ? MODELE4_SECTION_TITLES_EN : MODELE4_SECTION_TITLES;
   return titles[id] ?? id;
 }
 
@@ -202,7 +206,11 @@ const HEADER_CONTACT_MIN = 0.65;
  * @param fontSize taille nominale du texte, en points.
  * @param iconEm largeur de l'icône qui précède le texte, en em (0 = aucune).
  */
-function headerFitScale(value: string, fontSize: number, iconEm: number): number {
+function headerFitScale(
+  value: string,
+  fontSize: number,
+  iconEm: number,
+): number {
   const text = value.length * HEADER_CONTACT_CHAR * fontSize;
   const icon = iconEm * fontSize;
   const available =
@@ -234,21 +242,21 @@ export function personalItems(data: CVData): PersonalItem[] {
   const add = (
     type: PersonalType,
     raw: string | undefined,
-    format?: (v: string) => string
+    format?: (v: string) => string,
   ) => {
     const v = raw?.trim();
     if (v) items.push({ type, value: format ? format(v) : v });
   };
   add("birthDate", basics.birthDate, (v) =>
-    data.language === "en" ? `Date of birth: ${v}` : `Né(e) le ${v}`
+    data.language === "en" ? `Date of birth: ${v}` : `Né(e) le ${v}`,
   );
   add("nationality", basics.nationality, (v) =>
-    data.language === "en" ? `Nationality: ${v}` : `Nationalité : ${v}`
+    data.language === "en" ? `Nationality: ${v}` : `Nationalité : ${v}`,
   );
   add("address", basics.address);
   add("maritalStatus", basics.maritalStatus);
   add("permis", basics.permis, (v) =>
-    data.language === "en" ? `Driving licence: ${v}` : `Permis ${v}`
+    data.language === "en" ? `Driving licence: ${v}` : `Permis ${v}`,
   );
   add("website", basics.website);
   add("linkedin", basics.linkedin);
@@ -297,13 +305,16 @@ function dataUrlToBytes(dataUrl: string): Uint8Array {
 }
 
 /** Rastérise une icône lucide en PNG transparent (traits colorés). */
-async function rasterizeIcon(key: IconKey, colorHex: string): Promise<Uint8Array> {
+async function rasterizeIcon(
+  key: IconKey,
+  colorHex: string,
+): Promise<Uint8Array> {
   const svg = renderToStaticMarkup(
     createElement(CV_ICONS[key], {
       color: colorHex,
       size: ICON_RASTER_PX,
       strokeWidth: 2,
-    })
+    }),
   );
   const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
   try {
@@ -355,10 +366,16 @@ async function loadAssets(data: CVData): Promise<void> {
 
   const icons = new Map<string, [IconKey, string]>();
   for (const it of headerContactItems(data)) {
-    icons.set(iconCacheKey(it.type, HEADER_ICON_COLOR), [it.type, HEADER_ICON_COLOR]);
+    icons.set(iconCacheKey(it.type, HEADER_ICON_COLOR), [
+      it.type,
+      HEADER_ICON_COLOR,
+    ]);
   }
   for (const it of personalItems(data)) {
-    icons.set(iconCacheKey(it.type, BODY_ICON_COLOR), [it.type, BODY_ICON_COLOR]);
+    icons.set(iconCacheKey(it.type, BODY_ICON_COLOR), [
+      it.type,
+      BODY_ICON_COLOR,
+    ]);
   }
 
   const bars = new Map<number, number>(); // clé -> pourcentage
@@ -402,7 +419,12 @@ function heading(text: string): Paragraph {
   return new Paragraph({
     spacing: { before: sp(80), after: sp(120) },
     border: {
-      bottom: { style: BorderStyle.SINGLE, size: 6, color: C.headingBorder, space: 0 },
+      bottom: {
+        style: BorderStyle.SINGLE,
+        size: 6,
+        color: C.headingBorder,
+        space: 0,
+      },
     },
     children: [new TextRun({ text, color: C.accent, size: sz(24) })],
   });
@@ -423,18 +445,27 @@ function entryBlocks(entry: CVEntry): Block[] {
     new Paragraph({
       spacing: { after: sp(20) },
       children: [
-        new TextRun({ text: `${entry.title}  `, bold: true, color: "2B2B2B", size: sz(22) }),
-        ...(org ? [new TextRun({ text: org, color: C.accent, size: sz(21) })] : []),
+        new TextRun({
+          text: `${entry.title}  `,
+          bold: true,
+          color: "2B2B2B",
+          size: sz(22),
+        }),
+        ...(org
+          ? [new TextRun({ text: org, color: C.accent, size: sz(21) })]
+          : []),
       ],
-    })
+    }),
   );
 
   if (entry.date?.trim()) {
     blocks.push(
       new Paragraph({
         spacing: { after: sp(40) },
-        children: [new TextRun({ text: entry.date, color: "888888", size: sz(19) })],
-      })
+        children: [
+          new TextRun({ text: entry.date, color: "888888", size: sz(19) }),
+        ],
+      }),
     );
   }
 
@@ -444,8 +475,10 @@ function entryBlocks(entry: CVEntry): Block[] {
       new Paragraph({
         bullet: { level: 0 },
         spacing: { after: sp(40) },
-        children: [new TextRun({ text: bullet, color: "555555", size: sz(20) })],
-      })
+        children: [
+          new TextRun({ text: bullet, color: "555555", size: sz(20) }),
+        ],
+      }),
     );
   }
 
@@ -471,11 +504,14 @@ function levelBar(percent: number): Paragraph {
 }
 
 function dataUrlToImage(
-  dataUrl: string
+  dataUrl: string,
 ): { data: Uint8Array; type: "png" | "jpg" | "gif" | "bmp" } | null {
   const match = /^data:image\/(png|jpe?g|gif|bmp);base64,(.+)$/.exec(dataUrl);
   if (!match) return null;
-  const type = match[1] === "jpeg" || match[1] === "jpg" ? "jpg" : (match[1] as "png" | "gif" | "bmp");
+  const type =
+    match[1] === "jpeg" || match[1] === "jpg"
+      ? "jpg"
+      : (match[1] as "png" | "gif" | "bmp");
   const binary = atob(match[2]);
   const data = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) data[i] = binary.charCodeAt(i);
@@ -516,9 +552,16 @@ function renderSection(id: CVSectionId, data: CVData): Block[] {
       return [
         new Paragraph({
           spacing: { after: sp(180) },
-          alignment: basics.summaryJustify ? AlignmentType.JUSTIFIED : undefined,
+          alignment: basics.summaryJustify
+            ? AlignmentType.JUSTIFIED
+            : undefined,
           children: [
-            new TextRun({ text: basics.summary, italics: true, color: "555555", size: sz(20) }),
+            new TextRun({
+              text: basics.summary,
+              italics: true,
+              color: "555555",
+              size: sz(20),
+            }),
           ],
         }),
       ];
@@ -537,20 +580,29 @@ function renderSection(id: CVSectionId, data: CVData): Block[] {
     case "languages": {
       const languages = data.languages.filter((l) => l.name.trim());
       if (languages.length === 0) return [];
-      const blocks: Block[] = [heading(modele4SectionTitle("languages", data.language))];
+      const blocks: Block[] = [
+        heading(modele4SectionTitle("languages", data.language)),
+      ];
       for (const lang of languages) {
         blocks.push(
           new Paragraph({
             spacing: { after: sp(40) },
             children: [
-              new TextRun({ text: lang.name, bold: true, color: "333333", size: sz(21) }),
+              new TextRun({
+                text: lang.name,
+                bold: true,
+                color: "333333",
+                size: sz(21),
+              }),
             ],
           }),
           levelBar(levelToPercent(lang)),
           new Paragraph({
             spacing: { before: sp(30), after: sp(140) },
-            children: [new TextRun({ text: lang.level, color: "777777", size: sz(19) })],
-          })
+            children: [
+              new TextRun({ text: lang.level, color: "777777", size: sz(19) }),
+            ],
+          }),
         );
       }
       return blocks;
@@ -560,11 +612,16 @@ function renderSection(id: CVSectionId, data: CVData): Block[] {
     case "interests": {
       const values = data[id].filter((v) => v.trim());
       if (values.length === 0) return [];
-      return [heading(modele4SectionTitle(id, data.language)), ...values.map(plainLine)];
+      return [
+        heading(modele4SectionTitle(id, data.language)),
+        ...values.map(plainLine),
+      ];
     }
 
     case "informatique": {
-      const categories = data.informatique.filter((c) => c.label.trim() || c.items.trim());
+      const categories = data.informatique.filter(
+        (c) => c.label.trim() || c.items.trim(),
+      );
       if (categories.length === 0) return [];
       return [
         heading(modele4SectionTitle("informatique", data.language)),
@@ -579,9 +636,13 @@ function renderSection(id: CVSectionId, data: CVData): Block[] {
                   color: "333333",
                   size: sz(20),
                 }),
-                new TextRun({ text: category.items, color: "444444", size: sz(20) }),
+                new TextRun({
+                  text: category.items,
+                  color: "444444",
+                  size: sz(20),
+                }),
               ],
-            })
+            }),
         ),
       ];
     }
@@ -594,7 +655,9 @@ function renderSection(id: CVSectionId, data: CVData): Block[] {
       let content: Block[] = [];
       switch (section.kind) {
         case "entries": {
-          const entries = (section.entries ?? []).filter((e) => e.title.trim() || e.org.trim());
+          const entries = (section.entries ?? []).filter(
+            (e) => e.title.trim() || e.org.trim(),
+          );
           content = entries.flatMap((entry) => entryBlocks(entry));
           break;
         }
@@ -603,7 +666,13 @@ function renderSection(id: CVSectionId, data: CVData): Block[] {
             content = [
               new Paragraph({
                 spacing: { after: sp(120) },
-                children: [new TextRun({ text: section.text, color: "444444", size: sz(20) })],
+                children: [
+                  new TextRun({
+                    text: section.text,
+                    color: "444444",
+                    size: sz(20),
+                  }),
+                ],
               }),
             ];
           }
@@ -618,18 +687,28 @@ function renderSection(id: CVSectionId, data: CVData): Block[] {
                 new Paragraph({
                   bullet: { level: 0 },
                   spacing: { after: sp(40) },
-                  children: [new TextRun({ text, color: "444444", size: sz(21) })],
-                })
+                  children: [
+                    new TextRun({ text, color: "444444", size: sz(21) }),
+                  ],
+                }),
             );
       }
 
       if (!section.title.trim() && content.length === 0) return [];
-      return [heading(section.title || (data.language === "en" ? "Custom section" : "Bloc personnalisé")), ...content];
+      return [
+        heading(
+          section.title ||
+            (data.language === "en" ? "Custom section" : "Bloc personnalisé"),
+        ),
+        ...content,
+      ];
     }
   }
 }
 
-function noBordersCell(options: ConstructorParameters<typeof TableCell>[0]): TableCell {
+function noBordersCell(
+  options: ConstructorParameters<typeof TableCell>[0],
+): TableCell {
   return new TableCell(options);
 }
 
@@ -660,7 +739,7 @@ export async function buildModele4(data: CVData): Promise<Document> {
               transformation: { width: photoPx, height: photoPx },
             }),
           ],
-        })
+        }),
       );
     }
   }
@@ -713,7 +792,11 @@ export async function buildModele4(data: CVData): Promise<Document> {
               new Paragraph({
                 spacing: { after: sp(40) },
                 children: [
-                  new TextRun({ text: `${basics.firstName} `, color: WHITE, size: sz(52) }),
+                  new TextRun({
+                    text: `${basics.firstName} `,
+                    color: WHITE,
+                    size: sz(52),
+                  }),
                   new TextRun({
                     text: basics.lastName,
                     bold: true,
@@ -745,7 +828,9 @@ export async function buildModele4(data: CVData): Promise<Document> {
 
   /* ---------- Corps : deux colonnes suivant le layout ---------- */
   const leftBlocks = data.layout.left.flatMap((id) => renderSection(id, data));
-  const rightBlocks = data.layout.right.flatMap((id) => renderSection(id, data));
+  const rightBlocks = data.layout.right.flatMap((id) =>
+    renderSection(id, data),
+  );
 
   const body = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
@@ -763,7 +848,8 @@ export async function buildModele4(data: CVData): Promise<Document> {
             width: { size: 50, type: WidthType.PERCENTAGE },
             verticalAlign: VerticalAlign.TOP,
             margins: { top: 220, bottom: 120, left: 240, right: 120 },
-            children: rightBlocks.length > 0 ? rightBlocks : [new Paragraph("")],
+            children:
+              rightBlocks.length > 0 ? rightBlocks : [new Paragraph("")],
           }),
         ],
       }),
@@ -791,7 +877,12 @@ export async function buildModele4(data: CVData): Promise<Document> {
           // (hauteur exacte 1 pt, texte vide) pour éviter une page blanche
           // superflue quand le corps remplit presque la page.
           new Paragraph({
-            spacing: { before: 0, after: 0, line: 20, lineRule: LineRuleType.EXACT },
+            spacing: {
+              before: 0,
+              after: 0,
+              line: 20,
+              lineRule: LineRuleType.EXACT,
+            },
             children: [new TextRun({ text: "", size: 2 })],
           }),
         ],

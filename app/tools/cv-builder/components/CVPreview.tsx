@@ -21,7 +21,13 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import { cn } from "@/lib/cn";
-import type { CVColumn, CVData, CVEntry, CVLayout, CVSectionId } from "../lib/types";
+import type {
+  CVColumn,
+  CVData,
+  CVEntry,
+  CVLayout,
+  CVSectionId,
+} from "../lib/types";
 import { levelToPercent } from "../lib/levels";
 import {
   type ContactItem,
@@ -74,7 +80,13 @@ const PAGE_BREAK_H = 960;
  * dans `width` (une adresse email très longue) — sinon email et
  * téléphone s'affichent à la même taille.
  */
-function HeaderContact({ item, fontPx }: { item: ContactItem; fontPx: number }) {
+function HeaderContact({
+  item,
+  fontPx,
+}: {
+  item: ContactItem;
+  fontPx: number;
+}) {
   const Icon = CV_ICONS[item.type];
   const fit = headerContactScale(item.value, fontPx);
   return (
@@ -195,7 +207,7 @@ function SectionContent({ id, data }: { id: CVSectionId; data: CVData }) {
         <p
           className={cn(
             "mb-3 whitespace-pre-line text-[1em] italic leading-relaxed text-[#555555]",
-            basics.summaryJustify && "text-justify"
+            basics.summaryJustify && "text-justify",
           )}
         >
           {basics.summary}
@@ -237,7 +249,9 @@ function SectionContent({ id, data }: { id: CVSectionId; data: CVData }) {
                       }}
                     />
                   </div>
-                  <p className="mt-0.5 text-[0.95em] text-[#777777]">{lang.level}</p>
+                  <p className="mt-0.5 text-[0.95em] text-[#777777]">
+                    {lang.level}
+                  </p>
                 </li>
               ))}
           </ul>
@@ -262,7 +276,9 @@ function SectionContent({ id, data }: { id: CVSectionId; data: CVData }) {
     case "informatique":
       return (
         <section className="mb-3">
-          <Heading>{modele4SectionTitle("informatique", data.language)}</Heading>
+          <Heading>
+            {modele4SectionTitle("informatique", data.language)}
+          </Heading>
           <ul className="space-y-1 text-[1em]">
             {data.informatique
               .filter((c) => c.label.trim() || c.items.trim())
@@ -312,7 +328,10 @@ function SectionContent({ id, data }: { id: CVSectionId; data: CVData }) {
 
       return (
         <section className="mb-3">
-          <Heading>{section.title || (data.language === "en" ? "Custom section" : "Bloc personnalisé")}</Heading>
+          <Heading>
+            {section.title ||
+              (data.language === "en" ? "Custom section" : "Bloc personnalisé")}
+          </Heading>
           {content}
         </section>
       );
@@ -330,8 +349,14 @@ function SortableSection({
   editable: boolean;
   children: ReactNode;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id, disabled: !editable });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id, disabled: !editable });
 
   return (
     <div
@@ -395,7 +420,7 @@ export function CVPreview({
   const editable = Boolean(onLayoutChange);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
   );
 
   const firstName = basics.firstName.trim() || "Prénom";
@@ -416,7 +441,9 @@ export function CVPreview({
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const ro = new ResizeObserver((entries) => setWrapW(entries[0].contentRect.width));
+    const ro = new ResizeObserver((entries) =>
+      setWrapW(entries[0].contentRect.width),
+    );
     ro.observe(el);
     setWrapW(el.clientWidth);
     return () => ro.disconnect();
@@ -544,13 +571,18 @@ export function CVPreview({
               <p className="mt-1 text-[1.4em]" style={{ color: HEADER_TITLE }}>
                 <span
                   className="block whitespace-nowrap"
-                  style={{ fontSize: `${headerTitleScale(title, 1.4 * baseFontPx)}em` }}
+                  style={{
+                    fontSize: `${headerTitleScale(title, 1.4 * baseFontPx)}em`,
+                  }}
                 >
                   {title}
                 </span>
               </p>
               {/* Email et téléphone : même taille, une ligne chacun. */}
-              <ul className="mt-2 space-y-1 text-[1.1em]" style={{ color: HEADER_CONTACT }}>
+              <ul
+                className="mt-2 space-y-1 text-[1.1em]"
+                style={{ color: HEADER_CONTACT }}
+              >
                 {contactItems.map((item, i) => (
                   <li key={i}>
                     <HeaderContact item={item} fontPx={1.1 * baseFontPx} />
