@@ -27,10 +27,10 @@ import {
   type ContactItem,
   CV_ICONS,
   MODELE4_COLORS,
-  MODELE4_SECTION_TITLES,
   headerContactItems,
   headerContactScale,
   headerTitleScale,
+  modele4SectionTitle,
   personalItems,
 } from "../templates/modele4";
 
@@ -172,7 +172,7 @@ function SectionContent({ id, data }: { id: CVSectionId; data: CVData }) {
     case "contact":
       return (
         <section className="mb-3">
-          <Heading>{MODELE4_SECTION_TITLES.contact}</Heading>
+          <Heading>{modele4SectionTitle("contact", data.language)}</Heading>
           <ul className="space-y-1 text-[1.05em] text-[#333333]">
             {personalItems(data).map((item, i) => {
               const Icon = CV_ICONS[item.type];
@@ -206,7 +206,7 @@ function SectionContent({ id, data }: { id: CVSectionId; data: CVData }) {
     case "experience":
       return (
         <section className="mb-3">
-          <Heading>{MODELE4_SECTION_TITLES[id]}</Heading>
+          <Heading>{modele4SectionTitle(id, data.language)}</Heading>
           {data[id].map((entry, i) => (
             <EntryBlock key={i} entry={entry} />
           ))}
@@ -216,7 +216,7 @@ function SectionContent({ id, data }: { id: CVSectionId; data: CVData }) {
     case "languages":
       return (
         <section className="mb-3">
-          <Heading>{MODELE4_SECTION_TITLES.languages}</Heading>
+          <Heading>{modele4SectionTitle("languages", data.language)}</Heading>
           <ul className="space-y-2.5">
             {data.languages
               .filter((l) => l.name.trim())
@@ -248,7 +248,7 @@ function SectionContent({ id, data }: { id: CVSectionId; data: CVData }) {
     case "interests":
       return (
         <section className="mb-3">
-          <Heading>{MODELE4_SECTION_TITLES[id]}</Heading>
+          <Heading>{modele4SectionTitle(id, data.language)}</Heading>
           <ul className="space-y-1 text-[1.05em] text-[#444444]">
             {data[id]
               .filter((v) => v.trim())
@@ -262,7 +262,7 @@ function SectionContent({ id, data }: { id: CVSectionId; data: CVData }) {
     case "informatique":
       return (
         <section className="mb-3">
-          <Heading>{MODELE4_SECTION_TITLES.informatique}</Heading>
+          <Heading>{modele4SectionTitle("informatique", data.language)}</Heading>
           <ul className="space-y-1 text-[1em]">
             {data.informatique
               .filter((c) => c.label.trim() || c.items.trim())
@@ -312,7 +312,7 @@ function SectionContent({ id, data }: { id: CVSectionId; data: CVData }) {
 
       return (
         <section className="mb-3">
-          <Heading>{section.title || "Bloc personnalisé"}</Heading>
+          <Heading>{section.title || (data.language === "en" ? "Custom section" : "Bloc personnalisé")}</Heading>
           {content}
         </section>
       );

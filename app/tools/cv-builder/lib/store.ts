@@ -61,6 +61,7 @@ export const DEFAULT_INTERESTS = [
 
 export function createEmptyCV(): CVData {
   return {
+    language: "fr",
     basics: {
       firstName: "",
       lastName: "",
@@ -126,6 +127,7 @@ interface CVStore {
   setData: (data: CVData) => void;
   /** Associe l'éditeur à un CV en base (ou le détache avec null). */
   setCvMeta: (id: string | null, title: string) => void;
+  setLanguage: (language: NonNullable<CVData["language"]>) => void;
   setBasics: (patch: Partial<CVBasics>) => void;
   setPhoto: (dataUrl: string | null) => void;
   setTemplate: (key: TemplateKey) => void;
@@ -185,6 +187,7 @@ export const useCVStore = create<CVStore>()(
           // version antérieure du module reste chargeable.
           data.custom ??= [];
           data.layout ??= createDefaultLayout();
+          data.language ??= "fr";
           data.basics.personalCustom ??= [];
           data.fontScale ??= 100;
           for (const section of data.custom) {
@@ -199,6 +202,11 @@ export const useCVStore = create<CVStore>()(
       setBasics: (patch) =>
         set((state) => {
           Object.assign(state.data.basics, patch);
+        }),
+
+      setLanguage: (language) =>
+        set((state) => {
+          state.data.language = language;
         }),
 
       setPhoto: (dataUrl) =>
@@ -336,7 +344,7 @@ export const useCVStore = create<CVStore>()(
     })),
     {
       name: "cv-builder-state",
-      version: 5,
+      version: 6,
       partialize: (state) => ({
         data: state.data,
         templateKey: state.templateKey,
@@ -352,6 +360,7 @@ export const useCVStore = create<CVStore>()(
         if (state?.data) {
           state.data.custom ??= [];
           state.data.layout ??= createDefaultLayout();
+          state.data.language ??= "fr";
           state.data.basics.summaryJustify ??= false;
           state.data.basics.photoSize ??= 100;
           state.data.basics.github ??= "";

@@ -20,6 +20,8 @@ import { Field, TextArea, TextInput } from "./fields";
 
 export function BasicsSection() {
   const basics = useCVStore((s) => s.data.basics);
+  const language = useCVStore((s) => s.data.language ?? "fr");
+  const setLanguage = useCVStore((s) => s.setLanguage);
   const setBasics = useCVStore((s) => s.setBasics);
   const setPhoto = useCVStore((s) => s.setPhoto);
   const addPersonalCustom = useCVStore((s) => s.addPersonalCustom);
@@ -97,6 +99,16 @@ export function BasicsSection() {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field label="Langue du CV">
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as "fr" | "en")}
+            className="w-full rounded-lg border border-glass-border bg-surface px-3 py-2 text-sm text-content-primary"
+          >
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+          </select>
+        </Field>
         <Field label="Prénom">
           <TextInput
             value={basics.firstName}

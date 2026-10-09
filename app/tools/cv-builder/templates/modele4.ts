@@ -90,6 +90,21 @@ export const MODELE4_SECTION_TITLES: Record<string, string> = {
   informatique: "Informatique",
 };
 
+const MODELE4_SECTION_TITLES_EN: Record<string, string> = {
+  contact: "Personal information",
+  education: "Education",
+  experience: "Work experience",
+  languages: "Languages",
+  atouts: "Strengths",
+  interests: "Interests",
+  informatique: "IT skills",
+};
+
+export function modele4SectionTitle(id: string, language: CVData["language"]): string {
+  const titles = language === "en" ? MODELE4_SECTION_TITLES_EN : MODELE4_SECTION_TITLES;
+  return titles[id] ?? id;
+}
+
 /** Nature d'une info de contact du bandeau d'en-tête (haut). */
 export type ContactType = "email" | "phone";
 
@@ -224,11 +239,17 @@ export function personalItems(data: CVData): PersonalItem[] {
     const v = raw?.trim();
     if (v) items.push({ type, value: format ? format(v) : v });
   };
-  add("birthDate", basics.birthDate, (v) => `Né(e) le ${v}`);
-  add("nationality", basics.nationality, (v) => `Nationalité : ${v}`);
+  add("birthDate", basics.birthDate, (v) =>
+    data.language === "en" ? `Date of birth: ${v}` : `Né(e) le ${v}`
+  );
+  add("nationality", basics.nationality, (v) =>
+    data.language === "en" ? `Nationality: ${v}` : `Nationalité : ${v}`
+  );
   add("address", basics.address);
   add("maritalStatus", basics.maritalStatus);
-  add("permis", basics.permis, (v) => `Permis ${v}`);
+  add("permis", basics.permis, (v) =>
+    data.language === "en" ? `Driving licence: ${v}` : `Permis ${v}`
+  );
   add("website", basics.website);
   add("linkedin", basics.linkedin);
   add("github", basics.github);
@@ -475,7 +496,7 @@ function renderSection(id: CVSectionId, data: CVData): Block[] {
       if (items.length === 0) return [];
       const px = iconPx(21);
       return [
-        heading(MODELE4_SECTION_TITLES.contact),
+        heading(modele4SectionTitle("contact", data.language)),
         ...items.map((item, i) => {
           const icon = iconRun(item.type, BODY_ICON_COLOR, px);
           return new Paragraph({
@@ -508,7 +529,7 @@ function renderSection(id: CVSectionId, data: CVData): Block[] {
       const entries = data[id];
       if (!hasEntries(entries)) return [];
       return [
-        heading(MODELE4_SECTION_TITLES[id]),
+        heading(modele4SectionTitle(id, data.language)),
         ...entries.flatMap((entry) => entryBlocks(entry)),
       ];
     }
@@ -516,7 +537,7 @@ function renderSection(id: CVSectionId, data: CVData): Block[] {
     case "languages": {
       const languages = data.languages.filter((l) => l.name.trim());
       if (languages.length === 0) return [];
-      const blocks: Block[] = [heading(MODELE4_SECTION_TITLES.languages)];
+      const blocks: Block[] = [heading(modele4SectionTitle("languages", data.language))];
       for (const lang of languages) {
         blocks.push(
           new Paragraph({
@@ -539,14 +560,14 @@ function renderSection(id: CVSectionId, data: CVData): Block[] {
     case "interests": {
       const values = data[id].filter((v) => v.trim());
       if (values.length === 0) return [];
-      return [heading(MODELE4_SECTION_TITLES[id]), ...values.map(plainLine)];
+      return [heading(modele4SectionTitle(id, data.language)), ...values.map(plainLine)];
     }
 
     case "informatique": {
       const categories = data.informatique.filter((c) => c.label.trim() || c.items.trim());
       if (categories.length === 0) return [];
       return [
-        heading(MODELE4_SECTION_TITLES.informatique),
+        heading(modele4SectionTitle("informatique", data.language)),
         ...categories.map(
           (category) =>
             new Paragraph({
@@ -603,7 +624,7 @@ function renderSection(id: CVSectionId, data: CVData): Block[] {
       }
 
       if (!section.title.trim() && content.length === 0) return [];
-      return [heading(section.title || "Bloc personnalisé"), ...content];
+      return [heading(section.title || (data.language === "en" ? "Custom section" : "Bloc personnalisé")), ...content];
     }
   }
 }

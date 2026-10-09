@@ -96,6 +96,8 @@ export interface CVLayout {
 }
 
 export interface CVData {
+  /** Langue des libellés intégrés au document. */
+  language?: "fr" | "en";
   basics: CVBasics;
   languages: CVLanguage[];
   atouts: string[];
