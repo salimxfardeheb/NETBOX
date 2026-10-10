@@ -23,12 +23,18 @@ export function LanguagesSection() {
 
   return (
     <FormSection title={isEnglish ? "Languages" : "Langues"}>
-      <SortableList ids={ids} onReorder={(from, to) => reorderItem("languages", from, to)}>
+      <SortableList
+        ids={ids}
+        onReorder={(from, to) => reorderItem("languages", from, to)}
+      >
         <div className="space-y-3">
           {languages.map((language, index) => (
             <SortableRow key={ids[index]} id={ids[index]}>
               <div className="flex items-end gap-2 rounded-xl border border-glass-border bg-surface p-3">
-                <Field label={isEnglish ? "Language" : "Langue"} className="flex-1">
+                <Field
+                  label={isEnglish ? "Language" : "Langue"}
+                  className="flex-1"
+                >
                   <TextInput
                     value={language.name}
                     placeholder={isEnglish ? "English" : "Anglais"}
@@ -52,7 +58,9 @@ export function LanguagesSection() {
                   </Select>
                 </Field>
                 <div className="pb-1">
-                  <ItemControls onRemove={() => removeItem("languages", index)} />
+                  <ItemControls
+                    onRemove={() => removeItem("languages", index)}
+                  />
                 </div>
               </div>
             </SortableRow>

@@ -13,7 +13,9 @@ describe("language level labels", () => {
   });
 
   it("converts English labels to percentages", () => {
-    expect(levelToPercent({ name: "English", level: "Native speaker" })).toBe(100);
+    expect(levelToPercent({ name: "English", level: "Native speaker" })).toBe(
+      100,
+    );
     expect(levelToPercent({ name: "English", level: "B1" })).toBe(62);
     expect(levelToPercent({ name: "English", level: "Beginner" })).toBe(15);
   });

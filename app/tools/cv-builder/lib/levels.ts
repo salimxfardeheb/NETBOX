@@ -34,12 +34,17 @@ const LEVEL_OPTIONS_EN = [
  */
 export const LEVEL_OPTIONS = LEVEL_OPTIONS_FR;
 
-export const LEVEL_OPTIONS_BY_LANGUAGE: Record<CVLanguageMode, readonly string[]> = {
+export const LEVEL_OPTIONS_BY_LANGUAGE: Record<
+  CVLanguageMode,
+  readonly string[]
+> = {
   fr: LEVEL_OPTIONS_FR,
   en: LEVEL_OPTIONS_EN,
 };
 
-export function getLevelOptions(language: CVLanguageMode = "fr"): readonly string[] {
+export function getLevelOptions(
+  language: CVLanguageMode = "fr",
+): readonly string[] {
   return LEVEL_OPTIONS_BY_LANGUAGE[language];
 }
 
