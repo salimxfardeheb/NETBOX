@@ -2,7 +2,7 @@
 
 import { FaPlus } from "react-icons/fa";
 import { Button } from "@/components/ui/Button";
-import { LEVEL_OPTIONS } from "../../lib/levels";
+import { getLevelOptions } from "../../lib/levels";
 import { useCVStore } from "../../lib/store";
 import { FormSection } from "./FormSection";
 import { ItemControls } from "./ItemControls";
@@ -10,6 +10,7 @@ import { SortableList, SortableRow } from "./SortableList";
 import { Field, Select, TextInput } from "./fields";
 
 export function LanguagesSection() {
+  const languageMode = useCVStore((s) => s.data.language ?? "fr");
   const languages = useCVStore((s) => s.data.languages);
   const addItem = useCVStore((s) => s.addItem);
   const updateItem = useCVStore((s) => s.updateItem);
@@ -17,31 +18,33 @@ export function LanguagesSection() {
   const reorderItem = useCVStore((s) => s.reorderItem);
 
   const ids = languages.map((_, i) => `lang-${i}`);
+  const isEnglish = languageMode === "en";
+  const levelOptions = getLevelOptions(languageMode);
 
   return (
-    <FormSection title="Langues">
+    <FormSection title={isEnglish ? "Languages" : "Langues"}>
       <SortableList ids={ids} onReorder={(from, to) => reorderItem("languages", from, to)}>
         <div className="space-y-3">
           {languages.map((language, index) => (
             <SortableRow key={ids[index]} id={ids[index]}>
               <div className="flex items-end gap-2 rounded-xl border border-glass-border bg-surface p-3">
-                <Field label="Langue" className="flex-1">
+                <Field label={isEnglish ? "Language" : "Langue"} className="flex-1">
                   <TextInput
                     value={language.name}
-                    placeholder="Anglais"
+                    placeholder={isEnglish ? "English" : "Anglais"}
                     onChange={(e) =>
                       updateItem("languages", index, { name: e.target.value })
                     }
                   />
                 </Field>
-                <Field label="Niveau" className="w-44">
+                <Field label={isEnglish ? "Level" : "Niveau"} className="w-44">
                   <Select
                     value={language.level}
                     onChange={(e) =>
                       updateItem("languages", index, { level: e.target.value })
                     }
                   >
-                    {LEVEL_OPTIONS.map((level) => (
+                    {levelOptions.map((level) => (
                       <option key={level} value={level}>
                         {level}
                       </option>
@@ -64,7 +67,7 @@ export function LanguagesSection() {
         onClick={() => addItem("languages")}
       >
         <FaPlus className="h-4 w-4" />
-        Ajouter une langue
+        {isEnglish ? "Add a language" : "Ajouter une langue"}
       </Button>
     </FormSection>
   );

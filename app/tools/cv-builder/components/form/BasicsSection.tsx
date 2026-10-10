@@ -99,13 +99,13 @@ export function BasicsSection() {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Langue du CV">
+        <Field label={language === "en" ? "CV language" : "Langue du CV"}>
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value as "fr" | "en")}
             className="w-full rounded-lg border border-glass-border bg-surface px-3 py-2 text-sm text-content-primary"
           >
-            <option value="fr">Français</option>
+            <option value="fr">{language === "en" ? "French" : "Français"}</option>
             <option value="en">English</option>
           </select>
         </Field>
