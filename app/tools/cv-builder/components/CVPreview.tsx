@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -29,6 +29,7 @@ import type {
   CVSectionId,
 } from "../lib/types";
 import { levelToPercent } from "../lib/levels";
+import { classiqueVariantOf, type TemplateKey } from "../templates";
 import {
   type ContactItem,
   CV_ICONS,
@@ -39,6 +40,8 @@ import {
   modele4SectionTitle,
   personalItems,
 } from "../templates/modele4";
+import { A4Sheet } from "./A4Sheet";
+import { ClassiquePreview } from "./ClassiquePreview";
 
 /* Couleurs du modèle (mêmes valeurs que l'export .docx). */
 const PHOTO_BG = `#${MODELE4_COLORS.photoBg}`;
@@ -48,15 +51,6 @@ const HEADING_BORDER = `#${MODELE4_COLORS.headingBorder}`;
 const BAR_TRACK = `#${MODELE4_COLORS.barTrack}`;
 const HEADER_TITLE = `#${MODELE4_COLORS.headerTitle}`;
 const HEADER_CONTACT = `#${MODELE4_COLORS.headerContact}`;
-
-/*
- * Feuille A4 exprimée en points (1 px = 1 pt) — même base que l'export
- * .docx. Rendre l'aperçu à cette taille fixe (puis le mettre à l'échelle
- * pour la colonne) garantit que la taille du texte à l'écran correspond
- * exactement au document Word, quelle que soit la largeur de l'écran.
- */
-const A4_W = 595; // 210 mm — largeur A4 (base des polices : 1 px = 1 pt)
-const A4_H = 842; // 297 mm — hauteur A4 (forme de la feuille vide)
 
 /*
  * Hauteur de contenu par page pour le repère de coupe (trait rouge).
@@ -409,7 +403,7 @@ function PreviewColumn({
  * Si `onLayoutChange` est fourni, les sections deviennent glissables :
  * réordonnables dans une colonne et déplaçables d'une colonne à l'autre.
  */
-export function CVPreview({
+function Modele4Preview({
   data,
   onLayoutChange,
 }: {
@@ -430,38 +424,6 @@ export function CVPreview({
   const contactItems = headerContactItems(data);
   const photoPx = Math.round(105 * ((basics.photoSize ?? 100) / 100));
   const baseFontPx = ((data.fontScale ?? 100) / 100) * 10;
-
-  // Mesure de la largeur dispo (colonne) et de la hauteur réelle du contenu,
-  // pour mettre la feuille A4 à l'échelle et détecter le débordement de page.
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const sheetRef = useRef<HTMLDivElement>(null);
-  const [wrapW, setWrapW] = useState(A4_W);
-  const [sheetH, setSheetH] = useState(A4_H);
-
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver((entries) =>
-      setWrapW(entries[0].contentRect.width),
-    );
-    ro.observe(el);
-    setWrapW(el.clientWidth);
-    return () => ro.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const el = sheetRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setSheetH(el.scrollHeight));
-    ro.observe(el);
-    setSheetH(el.scrollHeight);
-    return () => ro.disconnect();
-  }, []);
-
-  // Échelle : on remplit la colonne sans jamais dépasser la taille réelle
-  // (k ≤ 1) — ainsi le glisser-déposer reste précis sur écrans standards.
-  const k = Math.min(1, wrapW / A4_W);
-  const pageCount = Math.max(1, Math.ceil(sheetH / PAGE_BREAK_H));
 
   const visibleLeft = layout.left.filter((id) => isSectionVisible(id, data));
   const visibleRight = layout.right.filter((id) => isSectionVisible(id, data));
@@ -510,108 +472,75 @@ export function CVPreview({
   };
 
   const document = (
-    <div ref={wrapRef} className="flex w-full justify-center">
-      {/* Boîte à l'échelle : réserve l'espace réel du rendu mis à l'échelle. */}
-      <div className="relative" style={{ width: A4_W * k, height: sheetH * k }}>
+    <A4Sheet fontPx={baseFontPx} pageBreakH={PAGE_BREAK_H}>
+      {/* Bandeau d'en-tête */}
+      <div className="flex min-h-[150px]">
         <div
-          ref={sheetRef}
-          data-cv-sheet
-          className="absolute left-0 top-0 origin-top-left overflow-hidden rounded-xl bg-white shadow-2xl"
-          style={{
-            width: A4_W,
-            minHeight: A4_H,
-            fontSize: `${baseFontPx}px`,
-            transform: `scale(${k})`,
-          }}
+          className="flex w-[22%] shrink-0 items-center justify-center p-2"
+          style={{ backgroundColor: PHOTO_BG }}
         >
-          {/* Séparateurs de page — apparaissent dès que le contenu déborde
-              sur une page suivante (aperçu uniquement). */}
-          {pageCount > 1 &&
-            Array.from({ length: pageCount - 1 }, (_, i) => (
-              <div
-                key={i}
-                aria-hidden
-                className="pointer-events-none absolute left-0 z-20 w-full"
-                style={{ top: (i + 1) * PAGE_BREAK_H }}
-              >
-                <div className="w-full border-t-2 border-dashed border-red-400/60" />
-                <span className="absolute right-2 top-1 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-600 shadow-sm">
-                  Page {i + 2}
-                </span>
-              </div>
-            ))}
-
-          {/* Bandeau d'en-tête */}
-          <div className="flex min-h-[150px]">
-            <div
-              className="flex w-[22%] shrink-0 items-center justify-center p-2"
-              style={{ backgroundColor: PHOTO_BG }}
-            >
-              {basics.photo && (
-                <img
-                  src={basics.photo}
-                  alt="Photo de profil"
-                  className="max-w-full object-cover"
-                  style={{ width: photoPx, height: photoPx }}
-                />
-              )}
-            </div>
-            {/* Nom, poste puis contacts, empilés sur toute la largeur
+          {basics.photo && (
+            <img
+              src={basics.photo}
+              alt="Photo de profil"
+              className="max-w-full object-cover"
+              style={{ width: photoPx, height: photoPx }}
+            />
+          )}
+        </div>
+        {/* Nom, poste puis contacts, empilés sur toute la largeur
                 restante. min-w-0 : sans lui, une ligne non coupée
                 élargirait le bloc (min-width auto) et fausserait le
                 partage 22/78 %. */}
-            <div
-              className="flex w-[78%] min-w-0 flex-col justify-center px-4 py-3"
-              style={{ backgroundColor: HEADER_BG }}
+        <div
+          className="flex w-[78%] min-w-0 flex-col justify-center px-4 py-3"
+          style={{ backgroundColor: HEADER_BG }}
+        >
+          <p className="text-[2.6em] leading-tight text-white">
+            {firstName} <span className="font-bold uppercase">{lastName}</span>
+          </p>
+          <p className="mt-1 text-[1.4em]" style={{ color: HEADER_TITLE }}>
+            <span
+              className="block whitespace-nowrap"
+              style={{
+                fontSize: `${headerTitleScale(title, 1.4 * baseFontPx)}em`,
+              }}
             >
-              <p className="text-[2.6em] leading-tight text-white">
-                {firstName}{" "}
-                <span className="font-bold uppercase">{lastName}</span>
-              </p>
-              <p className="mt-1 text-[1.4em]" style={{ color: HEADER_TITLE }}>
-                <span
-                  className="block whitespace-nowrap"
-                  style={{
-                    fontSize: `${headerTitleScale(title, 1.4 * baseFontPx)}em`,
-                  }}
-                >
-                  {title}
-                </span>
-              </p>
-              {/* Email et téléphone : même taille, une ligne chacun. */}
-              <ul
-                className="mt-2 space-y-1 text-[1.1em]"
-                style={{ color: HEADER_CONTACT }}
-              >
-                {contactItems.map((item, i) => (
-                  <li key={i}>
-                    <HeaderContact item={item} fontPx={1.1 * baseFontPx} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {/* Corps : deux colonnes */}
-          <div className="grid grid-cols-2 gap-x-6 px-5 py-4">
-            <PreviewColumn column="left" ids={visibleLeft}>
-              {visibleLeft.map((id) => (
-                <SortableSection key={id} id={id} editable={editable}>
-                  <SectionContent id={id} data={data} />
-                </SortableSection>
-              ))}
-            </PreviewColumn>
-            <PreviewColumn column="right" ids={visibleRight}>
-              {visibleRight.map((id) => (
-                <SortableSection key={id} id={id} editable={editable}>
-                  <SectionContent id={id} data={data} />
-                </SortableSection>
-              ))}
-            </PreviewColumn>
-          </div>
+              {title}
+            </span>
+          </p>
+          {/* Email et téléphone : même taille, une ligne chacun. */}
+          <ul
+            className="mt-2 space-y-1 text-[1.1em]"
+            style={{ color: HEADER_CONTACT }}
+          >
+            {contactItems.map((item, i) => (
+              <li key={i}>
+                <HeaderContact item={item} fontPx={1.1 * baseFontPx} />
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
-    </div>
+
+      {/* Corps : deux colonnes */}
+      <div className="grid grid-cols-2 gap-x-6 px-5 py-4">
+        <PreviewColumn column="left" ids={visibleLeft}>
+          {visibleLeft.map((id) => (
+            <SortableSection key={id} id={id} editable={editable}>
+              <SectionContent id={id} data={data} />
+            </SortableSection>
+          ))}
+        </PreviewColumn>
+        <PreviewColumn column="right" ids={visibleRight}>
+          {visibleRight.map((id) => (
+            <SortableSection key={id} id={id} editable={editable}>
+              <SectionContent id={id} data={data} />
+            </SortableSection>
+          ))}
+        </PreviewColumn>
+      </div>
+    </A4Sheet>
   );
 
   if (!editable) return document;
@@ -626,4 +555,23 @@ export function CVPreview({
       {document}
     </DndContext>
   );
+}
+
+/**
+ * Aperçu du CV selon le template choisi. Le glisser-déposer des
+ * sections (`onLayoutChange`) ne concerne que le modèle 4 : le modèle
+ * encadré suit l'ordre fixe de son gabarit.
+ */
+export function CVPreview({
+  data,
+  templateKey,
+  onLayoutChange,
+}: {
+  data: CVData;
+  templateKey: TemplateKey;
+  onLayoutChange?: (layout: CVLayout) => void;
+}) {
+  const variant = classiqueVariantOf(templateKey);
+  if (variant) return <ClassiquePreview data={data} variant={variant} />;
+  return <Modele4Preview data={data} onLayoutChange={onLayoutChange} />;
 }

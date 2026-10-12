@@ -75,7 +75,7 @@ export default function CVBuilderPage() {
     try {
       const currentData = useCVStore.getState().data;
       if (format === "pdf") {
-        await exportToPdf(currentData);
+        await exportToPdf(currentData, templateKey);
       } else {
         await exportToWord(currentData, templateKey);
       }
@@ -221,8 +221,11 @@ export default function CVBuilderPage() {
           <CVForm />
         </div>
         <div className="w-full lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:w-[52%] lg:overflow-y-auto">
-
-          <CVPreview data={data} onLayoutChange={setLayout} />
+          <CVPreview
+            data={data}
+            templateKey={templateKey}
+            onLayoutChange={setLayout}
+          />
         </div>
       </div>
     </>

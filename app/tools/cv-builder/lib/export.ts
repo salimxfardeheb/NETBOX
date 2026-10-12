@@ -47,7 +47,10 @@ export async function exportToWord(
  * puis en découpant l'image en pages A4 successives.
  * À appeler uniquement côté client (utilise le DOM + Canvas).
  */
-export async function exportToPdf(data: CVData): Promise<void> {
+export async function exportToPdf(
+  data: CVData,
+  templateKey: TemplateKey
+): Promise<void> {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
     import("html2canvas"),
     import("jspdf"),
@@ -67,7 +70,7 @@ export async function exportToPdf(data: CVData): Promise<void> {
     // Rendu synchrone : on ne dépend pas de requestAnimationFrame, qui peut
     // rester en attente indéfiniment sur un onglet en arrière-plan.
     flushSync(() => {
-      root.render(createElement(CVPreview, { data }));
+      root.render(createElement(CVPreview, { data, templateKey }));
     });
 
     const images = Array.from(host.querySelectorAll("img"));

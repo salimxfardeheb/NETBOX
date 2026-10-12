@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
 import { useCVStore } from "../../lib/store";
+import { classiqueVariantOf } from "../../templates";
 import { FormSection } from "./FormSection";
 import { ItemControls } from "./ItemControls";
 import { SortableList, SortableRow } from "./SortableList";
@@ -28,6 +29,8 @@ export function BasicsSection() {
   const updatePersonalCustom = useCVStore((s) => s.updatePersonalCustom);
   const removePersonalCustom = useCVStore((s) => s.removePersonalCustom);
   const reorderPersonalCustom = useCVStore((s) => s.reorderPersonalCustom);
+  // Champs propres au modèle encadré (Homme / Femme).
+  const classique = useCVStore((s) => classiqueVariantOf(s.templateKey));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const personalCustom = basics.personalCustom ?? [];
@@ -183,6 +186,24 @@ export function BasicsSection() {
             onChange={(e) => setBasics({ maritalStatus: e.target.value })}
           />
         </Field>
+        {classique === "homme" && (
+          <Field label="Service national" className="sm:col-span-2">
+            <TextInput
+              value={basics.serviceNational ?? ""}
+              placeholder="Dégagé"
+              onChange={(e) => setBasics({ serviceNational: e.target.value })}
+            />
+          </Field>
+        )}
+        {classique && (
+          <Field label="Niveau d'étude" className="sm:col-span-2">
+            <TextInput
+              value={basics.studyLevel ?? ""}
+              placeholder="Ex. 3ᵉ année secondaire"
+              onChange={(e) => setBasics({ studyLevel: e.target.value })}
+            />
+          </Field>
+        )}
         <Field label="LinkedIn">
           <TextInput
             value={basics.linkedin ?? ""}

@@ -26,6 +26,10 @@ export interface CVBasics {
   nationality?: string;
   /** Situation familiale (ex. "Célibataire"). */
   maritalStatus?: string;
+  /** Situation vis-à-vis du service national (modèle encadré — Homme). */
+  serviceNational?: string;
+  /** Niveau d'étude (modèle encadré). */
+  studyLevel?: string;
   linkedin?: string;
   website?: string;
   github?: string;

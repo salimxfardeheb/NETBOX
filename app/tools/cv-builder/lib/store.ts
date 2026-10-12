@@ -75,7 +75,37 @@ export const DEFAULT_INTERESTS = [
   "Voyages",
 ];
 
-export function createEmptyCV(): CVData {
+/**
+ * Atouts / centres d'intérêt pré-remplis de chaque template. Le modèle
+ * encadré reprend les lignes « Autres » de son gabarit (accordées au
+ * masculin ou au féminin) et n'a pas de bloc centres d'intérêt.
+ */
+const TEMPLATE_PRESETS: Record<
+  TemplateKey,
+  { atouts: readonly string[]; interests: readonly string[] }
+> = {
+  modele4: { atouts: DEFAULT_ATOUTS, interests: DEFAULT_INTERESTS },
+  classiqueHomme: {
+    atouts: [
+      "Motivé, dynamique, sérieux et ponctuel",
+      "Sens des responsabilités, sociable, créatif et organisé",
+    ],
+    interests: [],
+  },
+  classiqueFemme: {
+    atouts: [
+      "Sérieuse, motivée, dynamique, présentable, ayant le sens des responsabilités, libre de suite",
+    ],
+    interests: [],
+  },
+};
+
+function sameList(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((value, i) => value === b[i]);
+}
+
+export function createEmptyCV(templateKey: TemplateKey = "modele4"): CVData {
+  const presets = TEMPLATE_PRESETS[templateKey] ?? TEMPLATE_PRESETS.modele4;
   return {
     language: "fr",
     basics: {
@@ -92,14 +122,16 @@ export function createEmptyCV(): CVData {
       permis: "",
       nationality: "",
       maritalStatus: "",
+      serviceNational: "",
+      studyLevel: "",
       linkedin: "",
       website: "",
       github: "",
       personalCustom: [],
     },
     languages: [],
-    atouts: [...DEFAULT_ATOUTS],
-    interests: [...DEFAULT_INTERESTS],
+    atouts: [...presets.atouts],
+    interests: [...presets.interests],
     education: [],
     experience: [],
     informatique: [],
@@ -269,6 +301,16 @@ export const useCVStore = create<CVStore>()(
 
       setTemplate: (key) =>
         set((state) => {
+          // Les listes pré-remplies suivent le template tant que
+          // l'utilisateur ne les a pas modifiées (jamais de saisie écrasée).
+          const from =
+            TEMPLATE_PRESETS[state.templateKey] ?? TEMPLATE_PRESETS.modele4;
+          const to = TEMPLATE_PRESETS[key];
+          for (const section of ["atouts", "interests"] as const) {
+            if (sameList(state.data[section], from[section])) {
+              state.data[section] = [...to[section]];
+            }
+          }
           state.templateKey = key;
         }),
 
@@ -369,7 +411,7 @@ export const useCVStore = create<CVStore>()(
 
       reset: () =>
         set((state) => {
-          state.data = createEmptyCV();
+          state.data = createEmptyCV(state.templateKey);
           // Détache l'éditeur du CV en base : un CV réinitialisé ne doit
           // pas écraser silencieusement un CV enregistré en ligne.
           state.cvId = null;
