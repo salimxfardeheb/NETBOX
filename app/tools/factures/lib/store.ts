@@ -159,7 +159,7 @@ function initialState() {
     type: "FACTURE" as DocumentType,
     numeroApercu: numeroApercuParDefaut("FACTURE"),
     company: { ...DEFAULT_COMPANY },
-    customer: { raisonSociale: "", adresse: "", nif: "", telephone: "", email: "" },
+    customer: { raisonSociale: "", adresse: "", nif: "", nis: "", rc: "", telephone: "", email: "" },
     dateEmission: todayISO(),
     dateEcheance: "",
     dateValidite: "",

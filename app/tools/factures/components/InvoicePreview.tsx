@@ -173,6 +173,8 @@ export function InvoicePreview({
           {(customer.raisonSociale.trim() ||
             customer.adresse.trim() ||
             customer.nif?.trim() ||
+            customer.nis?.trim() ||
+            customer.rc?.trim() ||
             customer.telephone?.trim()) && (
             <div className="mt-4 flex justify-end">
               <div className="w-[46%] rounded border border-neutral-300 px-3 py-2">
@@ -184,6 +186,16 @@ export function InvoicePreview({
                 {customer.nif && (
                   <div>
                     <span className="font-semibold">NIF&nbsp;:</span> {customer.nif}
+                  </div>
+                )}
+                {customer.nis && (
+                  <div>
+                    <span className="font-semibold">NIS&nbsp;:</span> {customer.nis}
+                  </div>
+                )}
+                {customer.rc && (
+                  <div>
+                    <span className="font-semibold">RC&nbsp;:</span> {customer.rc}
                   </div>
                 )}
                 {customer.telephone && <div>Tél : {customer.telephone}</div>}

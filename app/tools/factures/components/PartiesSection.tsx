@@ -127,6 +127,18 @@ export function CustomerSection() {
             onChange={(e) => patchCustomer({ nif: e.target.value })}
           />
         </Field>
+        <Field label="NIS (optionnel)">
+          <TextInput
+            value={customer.nis ?? ""}
+            onChange={(e) => patchCustomer({ nis: e.target.value })}
+          />
+        </Field>
+        <Field label="RC (optionnel)">
+          <TextInput
+            value={customer.rc ?? ""}
+            onChange={(e) => patchCustomer({ rc: e.target.value })}
+          />
+        </Field>
         <Field label="Téléphone (optionnel)">
           <TextInput
             value={customer.telephone ?? ""}

@@ -45,6 +45,8 @@ export interface Customer {
   raisonSociale: string;
   adresse: string;
   nif?: string;
+  nis?: string;
+  rc?: string;
   telephone?: string;
   email?: string;
 }
